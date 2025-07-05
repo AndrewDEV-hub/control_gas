@@ -15,3 +15,25 @@ def crear_estacion():
 def listar_estaciones():
     estaciones = Estacion.query.all()
     return jsonify([{'id': e.id, 'nombre': e.nombre, 'ubicacion': e.ubicacion} for e in estaciones])
+@estacion_bp.route('/estaciones/<int:id>', methods=['GET'])
+def obtener_estacion(id):
+    estacion = Estacion.query.get_or_404(id)
+    return jsonify({'id': estacion.id, 'nombre': estacion.nombre, 'ubicacion': estacion.ubicacion})
+
+@estacion_bp.route('/estaciones/<int:id>', methods=['PUT'])
+def actualizar_estacion(id):
+    estacion = Estacion.query.get_or_404(id)
+    data = request.get_json()
+    if 'nombre' in data:
+        estacion.nombre = data['nombre']
+    if 'ubicacion' in data:
+        estacion.ubicacion = data['ubicacion']
+    db.session.commit()
+    return jsonify({'id': estacion.id, 'nombre': estacion.nombre, 'ubicacion': estacion.ubicacion})
+
+@estacion_bp.route('/estaciones/<int:id>', methods=['DELETE'])
+def eliminar_estacion(id):
+    estacion = Estacion.query.get_or_404(id)
+    db.session.delete(estacion)
+    db.session.commit()
+    return jsonify({'message': 'Estación eliminada'})
