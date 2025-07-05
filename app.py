@@ -31,3 +31,6 @@ def test_db():
         return f"Conectado a la base de datos. Primera persona: {persona.nombre}"
     else:
         return "Conectado a la base de datos, pero no hay personas."
+
+app = app
+    
