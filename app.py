@@ -21,10 +21,6 @@ from models import Persona
 
 
 @app.route("/")
-def index():
-    return "¡La aplicación Flask está corriendo en Vercel!"
-
-@app.route("/test_db")
 def test_db():
     persona = Persona.query.first()
     if persona:
