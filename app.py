@@ -18,6 +18,12 @@ migrate = Migrate(app, db)
 # Importa los modelos después de inicializar db
 from models import Persona
 
+
+
+@app.errorhandler(Exception)
+def handle_exception(e):
+    return str(e), 500
+
 @app.route("/test_db")
 def test_db():
     persona = Persona.query.first()
