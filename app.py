@@ -20,9 +20,9 @@ from models import Persona
 
 
 
-@app.errorhandler(Exception)
-def handle_exception(e):
-    return str(e), 500
+@app.route("/")
+def index():
+    return "¡La aplicación Flask está corriendo en Vercel!"
 
 @app.route("/test_db")
 def test_db():
