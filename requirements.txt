@@ -2,3 +2,4 @@ Flask
 flask_sqlalchemy
 Flask-Migrate
 psycopg2-binary
+python-dotenv
