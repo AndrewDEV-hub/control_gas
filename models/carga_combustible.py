@@ -1,4 +1,4 @@
-from ..app import db
+from . import db
 from sqlalchemy.sql import func
 
 class CargaCombustible(db.Model):

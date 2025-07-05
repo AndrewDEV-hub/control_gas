@@ -1,4 +1,4 @@
-from ..app import db
+from . import db
 
 class VehiculoInstitucional(db.Model):
     __tablename__ = 'vehiculos_institucionales'

@@ -2,7 +2,8 @@ from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 import os
 from dotenv import load_dotenv
-from models import Persona
+from models import db
+
 load_dotenv()
 app = Flask(__name__)
 
@@ -10,7 +11,10 @@ app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-db = SQLAlchemy(app)
+db.init_app(app)
+
+# Importa los modelos después de inicializar db
+from models import Persona
 
 @app.route("/test_db")
 def test_db():

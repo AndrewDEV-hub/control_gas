@@ -1,5 +1,4 @@
-from ..app import db
-
+from . import db
 class PersonaVehiculo(db.Model):
     __tablename__ = 'personas_vehiculos'
     id = db.Column(db.BigInteger, primary_key=True, autoincrement=True)

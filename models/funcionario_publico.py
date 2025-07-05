@@ -1,4 +1,4 @@
-from ..app import db
+from . import db
 
 class FuncionarioPublico(db.Model):
     __tablename__ = 'funcionarios_publicos'
