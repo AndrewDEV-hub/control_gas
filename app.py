@@ -54,6 +54,7 @@ def eliminar_persona(id):
 
 @app.route("/test_db")
 def test_db():
+    from models import Persona
     try:
         persona = Persona.query.first()
         if persona:
