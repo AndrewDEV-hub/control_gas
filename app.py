@@ -4,6 +4,9 @@ from flask_migrate import Migrate
 import os
 from dotenv import load_dotenv
 from models import db
+from controllers.combustible_controlador import combustible_bp
+
+
 
 load_dotenv()
 app = Flask(__name__)
@@ -16,6 +19,7 @@ if not db_url:
 # Usa la variable de entorno DATABASE_URL que pondrás en Vercel
 app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.register_blueprint(combustible_bp)
 
 db.init_app(app)
 migrate = Migrate(app, db) 
