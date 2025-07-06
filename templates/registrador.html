@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Panel Registrador</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-gray-100 min-h-screen">
+    <!-- Navbar -->
+    <nav class="w-full bg-blue-700 text-white flex items-center justify-between px-4 py-3 fixed top-0 left-0 z-50">
+        <a href="/" class="font-bold text-lg">Combustible</a>
+        <a href="/logout" class="bg-red-500 hover:bg-red-600 px-4 py-2 rounded transition text-sm font-semibold">Cerrar
+            sesión</a>
+    </nav>
+
+    <div class="max-w-3xl mx-auto pt-20 pb-8 px-2">
+        <h1 class="text-2xl font-bold text-blue-700 mb-6 text-center">Panel del Registrador</h1>
+        <!-- Barra de búsqueda -->
+        <div class="flex gap-2 mb-6">
+            <input id="busqueda" type="text" placeholder="Buscar por nombre, placa o CI..."
+                class="flex-1 px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-400">
+            <button id="buscarBtn" class="bg-gray-300 text-gray-700 px-4 py-2 rounded hover:bg-gray-400">Buscar</button>
+            <button id="nuevoBtn" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Nuevo</button>
+        </div>
+        <!-- Resultados -->
+        <div id="resultados" class="space-y-4"></div>
+        <div id="noRegistros" class="text-center text-gray-500 mt-8 hidden">No existen registros</div>
+    </div>
+
+    <!-- Modal de registro -->
+    <div id="modalRegistro" class="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-lg shadow-lg w-full max-w-lg mx-2 overflow-y-auto max-h-[95vh] relative">
+            <button onclick="cerrarModal()"
+                class="absolute top-2 right-2 text-gray-400 hover:text-red-500 text-2xl">&times;</button>
+            <div class="p-6">
+                <h2 class="text-xl font-bold mb-4 text-blue-700">Registrar nuevo cliente</h2>
+                <form id="registroForm" class="space-y-4">
+                    <!-- Persona -->
+                    <div>
+                        <label class="block font-semibold mb-1">Nombre completo</label>
+                        <input name="nombre" type="text" class="w-full border px-3 py-2 rounded" required>
+                    </div>
+                    <div>
+                        <label class="block font-semibold mb-1">CI</label>
+                        <input name="ci" type="text" class="w-full border px-3 py-2 rounded" required>
+                    </div>
+                    <div>
+                        <label class="inline-flex items-center">
+                            <input type="checkbox" id="funcionarioCheck" class="mr-2"> ¿Funcionario público?
+                        </label>
+                    </div>
+                    <div id="credencialDiv" class="hidden">
+                        <label class="block font-semibold mb-1">N° Credencial</label>
+                        <input name="numero_credencial" type="text" class="w-full border px-3 py-2 rounded">
+                    </div>
+                    <!-- Vehículo -->
+                    <hr>
+                    <div>
+                        <label class="block font-semibold mb-1">N° Chasis</label>
+                        <input name="numero_crasis" type="text" class="w-full border px-3 py-2 rounded" required>
+                    </div>
+                    <div>
+                        <label class="block font-semibold mb-1">Placa</label>
+                        <input name="placa" type="text" class="w-full border px-3 py-2 rounded" required>
+                    </div>
+                    <div>
+                        <label class="block font-semibold mb-1">Tipo</label>
+                        <select name="tipo" class="w-full border px-3 py-2 rounded" required>
+                            <option value="">Selecciona tipo</option>
+                            <option value="auto">Auto</option>
+                            <option value="motocicleta">Motocicleta</option>
+                            <option value="motocar">Motocar</option>
+                            <option value="camion">Camión</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="inline-flex items-center">
+                            <input type="checkbox" id="institucionalCheck" class="mr-2"> ¿Vehículo institucional?
+                        </label>
+                    </div>
+                    <div id="institucionDiv" class="hidden">
+                        <label class="block font-semibold mb-1">Nombre Institución</label>
+                        <input name="nombre_institucion" type="text" class="w-full border px-3 py-2 rounded">
+                    </div>
+                    <!-- Foto -->
+                    <hr>
+                    <div>
+                        <label class="block font-semibold mb-1">Foto del vehículo</label>
+                        <input name="foto" type="file" accept="image/*" capture="environment" class="w-full">
+                        <img id="previewFoto" src="https://placehold.co/120x80?text=Sin+foto" alt="Preview"
+                            class="mt-2 w-32 h-20 object-cover rounded border">
+                    </div>
+                    <div id="registroError" class="text-red-600 text-sm"></div>
+                    <button type="submit"
+                        class="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700">Guardar</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de carga de combustible -->
+    <div id="modalCarga" class="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-lg shadow-lg w-full max-w-md mx-2 overflow-y-auto max-h-[95vh] relative">
+            <button onclick="cerrarModalCarga()"
+                class="absolute top-2 right-2 text-gray-400 hover:text-red-500 text-2xl">&times;</button>
+            <div class="p-6">
+                <h2 class="text-xl font-bold mb-4 text-green-700">Registrar carga de combustible</h2>
+                <form id="cargaForm" class="space-y-4">
+                    <div>
+                        <label class="block font-semibold mb-1">Estación</label>
+                        <select name="estacion_id" id="cargaEstacion" class="w-full border px-3 py-2 rounded" required>
+                            <option value="">Selecciona estación</option>
+                            <!-- Las opciones se llenarán dinámicamente -->
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block font-semibold mb-1">Cantidad (litros)</label>
+                        <input name="cantidad" type="number" min="1" step="1" placeholder="Ej: 10"
+                            class="w-full border px-3 py-2 rounded" required>
+                    </div>
+                    <div id="cargaError" class="text-red-600 text-sm"></div>
+                    <button type="submit" class="w-full bg-green-600 text-white py-2 rounded hover:bg-green-700">Guardar
+                        carga</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Mensaje de éxito -->
+    <div id="mensajeExito"
+        class="fixed top-6 left-1/2 -translate-x-1/2 bg-green-500 text-white px-6 py-3 rounded shadow-lg hidden z-50">
+        ¡Registro guardado correctamente!
+    </div>
+
+    <script>
+        // Mostrar/ocultar campos en el modal
+        document.getElementById('funcionarioCheck').addEventListener('change', function () {
+            document.getElementById('credencialDiv').classList.toggle('hidden', !this.checked);
+        });
+        document.getElementById('institucionalCheck').addEventListener('change', function () {
+            document.getElementById('institucionDiv').classList.toggle('hidden', !this.checked);
+        });
+
+        // Preview de foto
+        document.querySelector('input[name="foto"]').addEventListener('change', function (e) {
+            const file = e.target.files[0];
+            const preview = document.getElementById('previewFoto');
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function (ev) { preview.src = ev.target.result; }
+                reader.readAsDataURL(file);
+            } else {
+                preview.src = "https://placehold.co/120x80?text=Sin+foto";
+            }
+        });
+
+        // Abrir/cerrar modal
+        document.getElementById('nuevoBtn').onclick = function () {
+            document.getElementById('modalRegistro').classList.remove('hidden');
+            document.getElementById('registroForm').reset();
+            document.getElementById('previewFoto').src = "https://placehold.co/120x80?text=Sin+foto";
+            document.getElementById('credencialDiv').classList.add('hidden');
+            document.getElementById('institucionDiv').classList.add('hidden');
+            document.getElementById('registroError').innerText = '';
+        };
+        function cerrarModal() {
+            document.getElementById('modalRegistro').classList.add('hidden');
+        }
+
+        // --- NUEVO: Cargar registros existentes al iniciar ---
+        let registros = [];
+        let cargasCombustible = [];
+        let estaciones = [];
+        async function cargarEstacionesComboBox() {
+            const select = document.getElementById('cargaEstacion');
+            select.innerHTML = '<option value="">Selecciona estación</option>';
+            try {
+                const response = await fetch('/estaciones');
+                estaciones = await response.json();
+                estaciones.forEach(e => {
+                    select.innerHTML += `<option value="${e.id}">${e.nombre}</option>`;
+                });
+            } catch (err) {
+                select.innerHTML += '<option value="">Error cargando estaciones</option>';
+            }
+        }
+
+        async function cargarRegistros() {
+            // Trae todas las relaciones persona-vehiculo
+            const relaciones = await fetch('/personas_vehiculos').then(r => r.json());
+            const personas = await fetch('/personas').then(r => r.json());
+            const vehiculos = await fetch('/vehiculos').then(r => r.json());
+            const funcionarios = await fetch('/funcionarios_publicos').then(r => r.json());
+            const institucionales = await fetch('/vehiculos_institucionales').then(r => r.json());
+            cargasCombustible = await fetch('/cargas_combustible').then(r => r.json());
+            estaciones = await fetch('/estaciones').then(r => r.json());
+
+            registros = relaciones.map(rel => {
+                const persona = personas.find(p => p.id === rel.persona_id);
+                const vehiculo = vehiculos.find(v => v.id === rel.vehiculo_id);
+                const funcionario = funcionarios.find(f => f.persona_id === persona?.id);
+                const institucional = institucionales.find(i => i.vehiculo_id === vehiculo?.id);
+                // Buscar última carga de este vehículo
+                const cargasVehiculo = cargasCombustible.filter(c => c.vehiculo_id === vehiculo?.id);
+                let ultima_carga = null;
+                if (cargasVehiculo.length > 0) {
+                    const carga = cargasVehiculo.reduce((a, b) => new Date(a.fecha) > new Date(b.fecha) ? a : b);
+                    const estacionObj = estaciones.find(e => e.id == carga.estacion_id);
+                    ultima_carga = {
+                        cantidad: carga.cantidad,
+                        estacion_nombre: estacionObj ? estacionObj.nombre : '-',
+                        fecha: carga.fecha ? new Date(carga.fecha).toLocaleString() : ''
+                    };
+                }
+                return {
+                    nombre: persona?.nombre || '',
+                    ci: persona?.ci || '',
+                    es_funcionario: !!funcionario,
+                    numero_credencial: funcionario?.numero_credencial || '',
+                    numero_crasis: vehiculo?.numero_crasis || '',
+                    placa: vehiculo?.placa || '',
+                    tipo: vehiculo?.tipo || '',
+                    es_institucional: !!institucional,
+                    nombre_institucion: institucional?.nombre_institucion || '',
+                    foto: null, // No hay foto guardada en backend
+                    vehiculo_id: vehiculo?.id,
+                    ultima_carga
+                };
+            });
+            mostrarRegistros(registros);
+        }
+
+        function mostrarRegistros(lista) {
+            const resultados = document.getElementById('resultados');
+            resultados.innerHTML = '';
+            if (lista.length === 0) {
+                document.getElementById('noRegistros').classList.remove('hidden');
+            } else {
+                document.getElementById('noRegistros').classList.add('hidden');
+                lista.forEach(data => mostrarTarjeta(data, false));
+            }
+        }
+
+        // Mostrar tarjeta de registro debajo de la barra de búsqueda
+        function mostrarTarjeta(data, prepend = true) {
+            const resultados = document.getElementById('resultados');
+            const fotoUrl = data.foto || "https://placehold.co/120x80?text=Sin+foto";
+            const tarjeta = document.createElement('div');
+            tarjeta.className = "bg-white rounded shadow flex gap-4 p-4 items-center relative";
+            tarjeta.innerHTML = `
+            <img src="${fotoUrl}" alt="Foto" class="w-32 h-20 object-cover rounded border">
+            <div class="flex-1">
+                <div class="font-bold text-lg">${data.nombre} (${data.ci})</div>
+                <div class="text-gray-600">${data.es_funcionario ? 'Funcionario Público, Credencial: ' + data.numero_credencial : 'No funcionario'}</div>
+                <div class="mt-1">Vehículo: <span class="font-semibold">${data.placa}</span> (${data.tipo})<br>
+                N° Chasis: ${data.numero_crasis} ${data.es_institucional ? '<br>Institucional: ' + data.nombre_institucion : ''}</div>
+                <div class="mt-1 carga-info"></div>
+                <button class="bg-green-600 text-white px-3 py-1 rounded mt-2 cargar-btn">Cargar</button>
+            </div>
+        `;
+            // Botón cargar
+            tarjeta.querySelector('.cargar-btn').onclick = function () {
+                abrirModalCarga(data.vehiculo_id, tarjeta);
+            };
+            // Mostrar última carga si existe
+            if (data.ultima_carga) {
+                tarjeta.querySelector('.carga-info').innerHTML = `
+                <div class="mt-2 text-sm text-green-700">
+                    Última carga: ${data.ultima_carga.cantidad} L en ${data.ultima_carga.estacion_nombre} (${data.ultima_carga.fecha})
+                </div>
+            `;
+            }
+            if (prepend) {
+                resultados.prepend(tarjeta);
+            } else {
+                resultados.appendChild(tarjeta);
+            }
+        }
+
+        // Modal cargar
+        let cargaVehiculoId = null;
+        let cargaTarjetaDiv = null;
+        function abrirModalCarga(vehiculo_id, tarjetaDiv) {
+            cargaVehiculoId = vehiculo_id;
+            cargaTarjetaDiv = tarjetaDiv;
+            cargarEstacionesComboBox(); // Llenar el combo box dinámicamente
+            document.getElementById('cargaForm').reset();
+            document.getElementById('cargaError').innerText = '';
+            document.getElementById('modalCarga').classList.remove('hidden');
+        }
+        function cerrarModalCarga() {
+            document.getElementById('modalCarga').classList.add('hidden');
+        }
+
+        // Guardar carga de combustible
+        document.getElementById('cargaForm').onsubmit = async function (e) {
+            e.preventDefault();
+            const estacion_id = this.estacion_id.value;
+            const cantidad = this.cantidad.value;
+            if (!cargaVehiculoId || !estacion_id || !cantidad) {
+                document.getElementById('cargaError').innerText = "Completa todos los campos.";
+                return;
+            }
+            // Validar que cantidad sea entero positivo
+            if (!/^\d+$/.test(cantidad) || parseInt(cantidad) < 1) {
+                document.getElementById('cargaError').innerText = "Ingresa un valor entero positivo.";
+                return;
+            }
+            // AGREGA ESTE CONSOLE.LOG AQUÍ
+            console.log({
+                vehiculo_id: cargaVehiculoId,
+                estacion_id: estacion_id,
+                cantidad: parseInt(cantidad, 10)
+            });
+            // Guardar en backend (convertir cantidad a entero)
+            let res = await fetch('/cargas_combustible', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    vehiculo_id: cargaVehiculoId,
+                    estacion_id: estacion_id,
+                    cantidad: parseInt(cantidad, 10)
+                })
+            });
+            if (!res.ok) {
+                document.getElementById('cargaError').innerText = "Error al guardar la carga.";
+                return;
+            }
+            // Obtener nombre estación y fecha
+            const estacion = document.querySelector(`#cargaEstacion option[value="${estacion_id}"]`);
+            const estacionNombre = estacion ? estacion.textContent : '-';
+            const fecha = new Date().toLocaleString();
+            // Mostrar en la tarjeta
+            if (cargaTarjetaDiv) {
+                cargaTarjetaDiv.querySelector('.carga-info').innerHTML = `
+            <div class="mt-2 text-sm text-green-700">
+                Última carga: ${cantidad} L en ${estacionNombre} (${fecha})
+            </div>
+        `;
+            }
+            cerrarModalCarga();
+        };
+
+        // Buscar por nombre, placa o CI (al escribir o al hacer click en buscar)
+        function filtrarRegistros() {
+            const q = document.getElementById('busqueda').value.trim().toLowerCase();
+            const filtrados = registros.filter(data =>
+                data.nombre.toLowerCase().includes(q) ||
+                data.ci.toLowerCase().includes(q) ||
+                data.placa.toLowerCase().includes(q)
+            );
+            mostrarRegistros(filtrados);
+        }
+        document.getElementById('busqueda').addEventListener('input', filtrarRegistros);
+        document.getElementById('buscarBtn').addEventListener('click', filtrarRegistros);
+
+        // Guardar registro (sin estación)
+        document.getElementById('registroForm').onsubmit = async function (e) {
+            e.preventDefault();
+            const form = e.target;
+            const nombre = form.nombre.value.trim();
+            const ci = form.ci.value.trim();
+            const es_funcionario = document.getElementById('funcionarioCheck').checked;
+            const numero_credencial = form.numero_credencial.value.trim();
+            const numero_crasis = form.numero_crasis.value.trim();
+            const placa = form.placa.value.trim();
+            const tipo = form.tipo.value;
+            const es_institucional = document.getElementById('institucionalCheck').checked;
+            const nombre_institucion = form.nombre_institucion.value.trim();
+            const fotoInput = form.foto;
+            const foto = fotoInput.files[0];
+
+            // Validaciones básicas
+            if (!nombre || !ci || !numero_crasis || !placa || !tipo) {
+                document.getElementById('registroError').innerText = "Completa todos los campos obligatorios.";
+                return;
+            }
+            if (es_funcionario && !numero_credencial) {
+                document.getElementById('registroError').innerText = "Ingresa el número de credencial.";
+                return;
+            }
+            if (es_institucional && !nombre_institucion) {
+                document.getElementById('registroError').innerText = "Ingresa el nombre de la institución.";
+                return;
+            }
+
+            // 1. Crear persona
+            let personaRes = await fetch('/personas', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ nombre, ci })
+            });
+            if (!personaRes.ok) {
+                document.getElementById('registroError').innerText = "Error al crear persona (¿CI duplicado?).";
+                return;
+            }
+            const persona = await personaRes.json();
+
+            // 2. Si es funcionario, crear funcionario_publico
+            if (es_funcionario) {
+                let funcRes = await fetch('/funcionarios_publicos', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ persona_id: persona.id, numero_credencial })
+                });
+                if (!funcRes.ok) {
+                    document.getElementById('registroError').innerText = "Error al crear funcionario público.";
+                    return;
+                }
+            }
+
+            // 3. Crear vehículo
+            let vehiculoRes = await fetch('/vehiculos', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ numero_crasis, placa, tipo })
+            });
+            if (!vehiculoRes.ok) {
+                document.getElementById('registroError').innerText = "Error al crear vehículo (¿placa duplicada?).";
+                return;
+            }
+            const vehiculo = await vehiculoRes.json();
+
+            // 4. Si es institucional, crear vehiculo_institucional
+            if (es_institucional) {
+                let instRes = await fetch('/vehiculos_institucionales', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ vehiculo_id: vehiculo.id, nombre_institucion })
+                });
+                if (!instRes.ok) {
+                    document.getElementById('registroError').innerText = "Error al crear vehículo institucional.";
+                    return;
+                }
+            }
+
+            // 5. Relacionar persona y vehículo (con restricciones)
+            let relRes = await fetch('/personas_vehiculos', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ persona_id: persona.id, vehiculo_id: vehiculo.id })
+            });
+            if (!relRes.ok) {
+                const data = await relRes.json();
+                document.getElementById('registroError').innerText = data.error || "Error al asociar persona y vehículo.";
+                return;
+            }
+
+            // 6. Guardar foto (simulado, solo preview local)
+            // Aquí deberías enviar la foto a un endpoint backend si quieres guardarla realmente.
+            // Por ahora solo la mostramos en la tarjeta.
+
+            // 7. Mostrar mensaje de éxito y cerrar modal
+            cerrarModal();
+            document.getElementById('mensajeExito').classList.remove('hidden');
+            setTimeout(() => document.getElementById('mensajeExito').classList.add('hidden'), 2000);
+
+            // 8. Agregar tarjeta al listado y a la lista de registros
+            const nuevoRegistro = {
+                nombre, ci, es_funcionario, numero_credencial,
+                numero_crasis, placa, tipo, es_institucional, nombre_institucion,
+                foto: foto ? URL.createObjectURL(foto) : null,
+                vehiculo_id: vehiculo.id,
+                ultima_carga: null
+            };
+            registros.unshift(nuevoRegistro);
+            mostrarRegistros(registros);
+        };
+
+        // Inicializar: cargar registros existentes
+        window.addEventListener('DOMContentLoaded', cargarRegistros);
+    </script>
+</body>
+
+</html>

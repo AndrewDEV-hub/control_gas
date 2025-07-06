@@ -5,6 +5,8 @@ from .usuario_controlador import usuario_bp
 from .carga_combustible_controlador import carga_combustible_bp
 from .funcionario_publico_controlador import funcionario_publico_bp
 from .vehiculo_institucional import vehiculo_institucional_bp
+from .persona_vehiculo_controlador import persona_vehiculo_bp
+from .auth_controlador import auth_bp
 
 blueprints = [
     persona_bp,
@@ -13,5 +15,7 @@ blueprints = [
     usuario_bp,
     carga_combustible_bp,
     funcionario_publico_bp,
-    vehiculo_institucional_bp
+    vehiculo_institucional_bp,
+    persona_vehiculo_bp,
+    auth_bp
 ]

@@ -25,17 +25,6 @@ def listar_funcionarios_publicos():
         } for f in funcionarios
     ])
 
-@funcionario_publico_bp.route('/funcionarios_publicos', methods=['GET'])
-def listar_funcionarios_publicos():
-    funcionarios = FuncionarioPublico.query.all()
-    return jsonify([
-        {
-            'id': f.id,
-            'persona_id': f.persona_id,
-            'numero_credencial': f.numero_credencial
-        } for f in funcionarios
-    ])
-
 @funcionario_publico_bp.route('/funcionarios_publicos/<int:id>', methods=['GET'])
 def obtener_funcionario_publico(id):
     funcionario = FuncionarioPublico.query.get_or_404(id)
