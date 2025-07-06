@@ -5,6 +5,35 @@
     <meta charset="UTF-8">
     <title>Panel Registrador</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Agrega el cliente de Supabase -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+    <script>
+        // Configura tu cliente Supabase aquí
+        const supabase = window.supabase.createClient(
+            'https://wgczmcheqqffemfxfudc.supabase.co', // Reemplaza con tu URL de Supabase
+            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndnY3ptY2hlcXFmZmVtZnhmdWRjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE2OTE3MDQsImV4cCI6MjA2NzI2NzcwNH0.lXpXV7cHp7s_4pbSJRarzTKNCR9Aj9if714ncEyKRZs' // Reemplaza con tu API Key pública
+        );
+        supabase
+            .from('vehiculos')
+            .select('*')
+            .then(res => console.log("Prueba Supabase:", res))
+            .catch(err => console.error("Error Supabase:", err));
+        // Función para subir imagen a Supabase Storage
+        async function subirImagenASupabase(file, nombreArchivo) {
+            const { data, error } = await supabase.storage
+                .from('vehiculos')
+                .upload(nombreArchivo, file, { upsert: true });
+            if (error) {
+                alert("Error al subir imagen: " + error.message);
+                return null;
+            }
+            const { data: publicUrlData } = supabase
+                .storage
+                .from('vehiculos')
+                .getPublicUrl(nombreArchivo);
+            return publicUrlData.publicUrl;
+        }
+    </script>
 </head>
 
 <body class="bg-gray-100 min-h-screen">
@@ -224,7 +253,7 @@
                     tipo: vehiculo?.tipo || '',
                     es_institucional: !!institucional,
                     nombre_institucion: institucional?.nombre_institucion || '',
-                    foto: null, // No hay foto guardada en backend
+                    foto: vehiculo?.foto || null, // <-- ESTA LÍNEA ES CLAVE
                     vehiculo_id: vehiculo?.id,
                     ultima_carga
                 };
@@ -356,7 +385,7 @@
         document.getElementById('busqueda').addEventListener('input', filtrarRegistros);
         document.getElementById('buscarBtn').addEventListener('click', filtrarRegistros);
 
-        // Guardar registro (sin estación)
+        // Guardar registro (con subida de imagen a Supabase)
         document.getElementById('registroForm').onsubmit = async function (e) {
             e.preventDefault();
             const form = e.target;
@@ -387,43 +416,65 @@
             }
 
             // 1. Crear persona
+            console.log("Enviando persona:", { nombre, ci });
             let personaRes = await fetch('/personas', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ nombre, ci })
             });
+            console.log("Respuesta persona:", personaRes.status);
             if (!personaRes.ok) {
-                document.getElementById('registroError').innerText = "Error al crear persona (¿CI duplicado?).";
+                const errorText = await personaRes.text();
+                document.getElementById('registroError').innerText = "Error al crear persona: " + errorText;
                 return;
             }
             const persona = await personaRes.json();
 
             // 2. Si es funcionario, crear funcionario_publico
             if (es_funcionario) {
+                console.log("Enviando funcionario:", { persona_id: persona.id, numero_credencial });
                 let funcRes = await fetch('/funcionarios_publicos', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ persona_id: persona.id, numero_credencial })
                 });
+                console.log("Respuesta funcionario:", funcRes.status);
                 if (!funcRes.ok) {
-                    document.getElementById('registroError').innerText = "Error al crear funcionario público.";
+                    const errorText = await funcRes.text();
+                    document.getElementById('registroError').innerText = "Error al crear funcionario público: " + errorText;
                     return;
                 }
             }
 
-            // 3. Crear vehículo
+            // 3. Subir imagen a Supabase Storage antes de crear el vehículo
+            let fotoUrl = null;
+            if (foto) {
+                const nombreArchivo = `vehiculo_${Date.now()}_${placa}.jpg`;
+                console.log("Subiendo imagen a Supabase:", nombreArchivo, foto);
+                fotoUrl = await subirImagenASupabase(foto, nombreArchivo);
+                console.log("URL de la foto subida:", fotoUrl);
+                if (!fotoUrl) {
+                    document.getElementById('registroError').innerText = "Error al subir la imagen.";
+                    return;
+                }
+            }
+
+            // 4. Crear vehículo (ahora incluye foto)
+            console.log("Enviando vehículo:", { numero_crasis, placa, tipo, foto: fotoUrl });
             let vehiculoRes = await fetch('/vehiculos', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ numero_crasis, placa, tipo })
+                body: JSON.stringify({ numero_crasis, placa, tipo, foto: fotoUrl })
             });
+            console.log("Respuesta vehículo:", vehiculoRes.status);
             if (!vehiculoRes.ok) {
-                document.getElementById('registroError').innerText = "Error al crear vehículo (¿placa duplicada?).";
+                const errorText = await vehiculoRes.text();
+                document.getElementById('registroError').innerText = "Error al crear vehículo: " + errorText;
                 return;
             }
             const vehiculo = await vehiculoRes.json();
 
-            // 4. Si es institucional, crear vehiculo_institucional
+            // 5. Si es institucional, crear vehiculo_institucional
             if (es_institucional) {
                 let instRes = await fetch('/vehiculos_institucionales', {
                     method: 'POST',
@@ -436,7 +487,7 @@
                 }
             }
 
-            // 5. Relacionar persona y vehículo (con restricciones)
+            // 6. Relacionar persona y vehículo (con restricciones)
             let relRes = await fetch('/personas_vehiculos', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -448,10 +499,6 @@
                 return;
             }
 
-            // 6. Guardar foto (simulado, solo preview local)
-            // Aquí deberías enviar la foto a un endpoint backend si quieres guardarla realmente.
-            // Por ahora solo la mostramos en la tarjeta.
-
             // 7. Mostrar mensaje de éxito y cerrar modal
             cerrarModal();
             document.getElementById('mensajeExito').classList.remove('hidden');
@@ -461,7 +508,7 @@
             const nuevoRegistro = {
                 nombre, ci, es_funcionario, numero_credencial,
                 numero_crasis, placa, tipo, es_institucional, nombre_institucion,
-                foto: foto ? URL.createObjectURL(foto) : null,
+                foto: fotoUrl,
                 vehiculo_id: vehiculo.id,
                 ultima_carga: null
             };
@@ -469,7 +516,7 @@
             mostrarRegistros(registros);
         };
 
-        // Inicializar: cargar registros existentes
+        // ...resto del código igual...
         window.addEventListener('DOMContentLoaded', cargarRegistros);
     </script>
 </body>
