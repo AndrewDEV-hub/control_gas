@@ -4,15 +4,17 @@
 <head>
     <meta charset="UTF-8">
     <title>Panel Registrador</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Agrega el cliente de Supabase -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
     <script>
         // Configura tu cliente Supabase aquí
         const supabase = window.supabase.createClient(
-            'https://wgczmcheqqffemfxfudc.supabase.co', // Reemplaza con tu URL de Supabase
-            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndnY3ptY2hlcXFmZmVtZnhmdWRjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE2OTE3MDQsImV4cCI6MjA2NzI2NzcwNH0.lXpXV7cHp7s_4pbSJRarzTKNCR9Aj9if714ncEyKRZs' // Reemplaza con tu API Key pública
+            'https://wgczmcheqqffemfxfudc.supabase.co',
+            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndnY3ptY2hlcXFmZmVtZnhmdWRjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE2OTE3MDQsImV4cCI6MjA2NzI2NzcwNH0.lXpXV7cHp7s_4pbSJRarzTKNCR9Aj9if714ncEyKRZs'
         );
+        // Prueba de conexión
         supabase
             .from('vehiculos')
             .select('*')
@@ -40,63 +42,75 @@
     <!-- Navbar -->
     <nav class="w-full bg-blue-700 text-white flex items-center justify-between px-4 py-3 fixed top-0 left-0 z-50">
         <a href="/" class="font-bold text-lg">Combustible</a>
-        <a href="/logout" class="bg-red-500 hover:bg-red-600 px-4 py-2 rounded transition text-sm font-semibold">Cerrar
+        <a href="/logout"
+            class="bg-red-500 hover:bg-red-600 px-4 py-2 rounded transition text-xs sm:text-sm font-semibold">Cerrar
             sesión</a>
     </nav>
 
-    <div class="max-w-3xl mx-auto pt-20 pb-8 px-2">
-        <h1 class="text-2xl font-bold text-blue-700 mb-6 text-center">Panel del Registrador</h1>
+    <div class="max-w-3xl mx-auto pt-24 pb-8 px-2 sm:px-4">
+        <h1 class="text-xl sm:text-2xl font-bold text-blue-700 mb-6 text-center">Panel del Registrador</h1>
         <!-- Barra de búsqueda -->
-        <div class="flex gap-2 mb-6">
+        <div class="flex flex-col sm:flex-row gap-2 mb-6">
             <input id="busqueda" type="text" placeholder="Buscar por nombre, placa o CI..."
-                class="flex-1 px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-400">
-            <button id="buscarBtn" class="bg-gray-300 text-gray-700 px-4 py-2 rounded hover:bg-gray-400">Buscar</button>
-            <button id="nuevoBtn" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Nuevo</button>
+                class="flex-1 px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-400 text-sm sm:text-base">
+            <div class="flex gap-2">
+                <button id="buscarBtn"
+                    class="bg-gray-300 text-gray-700 px-4 py-2 rounded hover:bg-gray-400 text-sm sm:text-base">Buscar</button>
+                <button id="nuevoBtn"
+                    class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 text-sm sm:text-base">Nuevo</button>
+            </div>
         </div>
         <!-- Resultados -->
         <div id="resultados" class="space-y-4"></div>
-        <div id="noRegistros" class="text-center text-gray-500 mt-8 hidden">No existen registros</div>
+        <div id="noRegistros" class="text-center text-gray-500 mt-8 hidden text-sm sm:text-base">No existen registros
+        </div>
     </div>
 
     <!-- Modal de registro -->
     <div id="modalRegistro" class="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 hidden">
-        <div class="bg-white rounded-lg shadow-lg w-full max-w-lg mx-2 overflow-y-auto max-h-[95vh] relative">
+        <div
+            class="bg-white rounded-lg shadow-lg w-full max-w-lg mx-2 sm:mx-auto overflow-y-auto max-h-[95vh] relative">
             <button onclick="cerrarModal()"
                 class="absolute top-2 right-2 text-gray-400 hover:text-red-500 text-2xl">&times;</button>
-            <div class="p-6">
-                <h2 class="text-xl font-bold mb-4 text-blue-700">Registrar nuevo cliente</h2>
+            <div class="p-4 sm:p-6">
+                <h2 class="text-lg sm:text-xl font-bold mb-4 text-blue-700">Registrar nuevo cliente</h2>
                 <form id="registroForm" class="space-y-4">
                     <!-- Persona -->
                     <div>
-                        <label class="block font-semibold mb-1">Nombre completo</label>
-                        <input name="nombre" type="text" class="w-full border px-3 py-2 rounded" required>
+                        <label class="block font-semibold mb-1 text-sm sm:text-base">Nombre completo</label>
+                        <input name="nombre" type="text" class="w-full border px-3 py-2 rounded text-sm sm:text-base"
+                            required>
                     </div>
                     <div>
-                        <label class="block font-semibold mb-1">CI</label>
-                        <input name="ci" type="text" class="w-full border px-3 py-2 rounded" required>
+                        <label class="block font-semibold mb-1 text-sm sm:text-base">CI</label>
+                        <input name="ci" type="text" class="w-full border px-3 py-2 rounded text-sm sm:text-base"
+                            required>
                     </div>
                     <div>
-                        <label class="inline-flex items-center">
+                        <label class="inline-flex items-center text-sm sm:text-base">
                             <input type="checkbox" id="funcionarioCheck" class="mr-2"> ¿Funcionario público?
                         </label>
                     </div>
                     <div id="credencialDiv" class="hidden">
-                        <label class="block font-semibold mb-1">N° Credencial</label>
-                        <input name="numero_credencial" type="text" class="w-full border px-3 py-2 rounded">
+                        <label class="block font-semibold mb-1 text-sm sm:text-base">N° Credencial</label>
+                        <input name="numero_credencial" type="text"
+                            class="w-full border px-3 py-2 rounded text-sm sm:text-base">
                     </div>
                     <!-- Vehículo -->
                     <hr>
                     <div>
-                        <label class="block font-semibold mb-1">N° Chasis</label>
-                        <input name="numero_crasis" type="text" class="w-full border px-3 py-2 rounded" required>
+                        <label class="block font-semibold mb-1 text-sm sm:text-base">N° Chasis</label>
+                        <input name="numero_crasis" type="text"
+                            class="w-full border px-3 py-2 rounded text-sm sm:text-base" required>
                     </div>
                     <div>
-                        <label class="block font-semibold mb-1">Placa</label>
-                        <input name="placa" type="text" class="w-full border px-3 py-2 rounded" required>
+                        <label class="block font-semibold mb-1 text-sm sm:text-base">Placa</label>
+                        <input name="placa" type="text" class="w-full border px-3 py-2 rounded text-sm sm:text-base"
+                            required>
                     </div>
                     <div>
-                        <label class="block font-semibold mb-1">Tipo</label>
-                        <select name="tipo" class="w-full border px-3 py-2 rounded" required>
+                        <label class="block font-semibold mb-1 text-sm sm:text-base">Tipo</label>
+                        <select name="tipo" class="w-full border px-3 py-2 rounded text-sm sm:text-base" required>
                             <option value="">Selecciona tipo</option>
                             <option value="auto">Auto</option>
                             <option value="motocicleta">Motocicleta</option>
@@ -105,25 +119,27 @@
                         </select>
                     </div>
                     <div>
-                        <label class="inline-flex items-center">
+                        <label class="inline-flex items-center text-sm sm:text-base">
                             <input type="checkbox" id="institucionalCheck" class="mr-2"> ¿Vehículo institucional?
                         </label>
                     </div>
                     <div id="institucionDiv" class="hidden">
-                        <label class="block font-semibold mb-1">Nombre Institución</label>
-                        <input name="nombre_institucion" type="text" class="w-full border px-3 py-2 rounded">
+                        <label class="block font-semibold mb-1 text-sm sm:text-base">Nombre Institución</label>
+                        <input name="nombre_institucion" type="text"
+                            class="w-full border px-3 py-2 rounded text-sm sm:text-base">
                     </div>
                     <!-- Foto -->
                     <hr>
                     <div>
-                        <label class="block font-semibold mb-1">Foto del vehículo</label>
-                        <input name="foto" type="file" accept="image/*" capture="environment" class="w-full">
+                        <label class="block font-semibold mb-1 text-sm sm:text-base">Foto del vehículo</label>
+                        <input name="foto" type="file" accept="image/*" capture="environment"
+                            class="w-full text-sm sm:text-base">
                         <img id="previewFoto" src="https://placehold.co/120x80?text=Sin+foto" alt="Preview"
-                            class="mt-2 w-32 h-20 object-cover rounded border">
+                            class="mt-2 w-24 h-16 sm:w-32 sm:h-20 object-cover rounded border">
                     </div>
-                    <div id="registroError" class="text-red-600 text-sm"></div>
+                    <div id="registroError" class="text-red-600 text-xs sm:text-sm"></div>
                     <button type="submit"
-                        class="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700">Guardar</button>
+                        class="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 text-sm sm:text-base">Guardar</button>
                 </form>
             </div>
         </div>
@@ -131,26 +147,28 @@
 
     <!-- Modal de carga de combustible -->
     <div id="modalCarga" class="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 hidden">
-        <div class="bg-white rounded-lg shadow-lg w-full max-w-md mx-2 overflow-y-auto max-h-[95vh] relative">
+        <div
+            class="bg-white rounded-lg shadow-lg w-full max-w-md mx-2 sm:mx-auto overflow-y-auto max-h-[95vh] relative">
             <button onclick="cerrarModalCarga()"
                 class="absolute top-2 right-2 text-gray-400 hover:text-red-500 text-2xl">&times;</button>
-            <div class="p-6">
-                <h2 class="text-xl font-bold mb-4 text-green-700">Registrar carga de combustible</h2>
+            <div class="p-4 sm:p-6">
+                <h2 class="text-lg sm:text-xl font-bold mb-4 text-green-700">Registrar carga de combustible</h2>
                 <form id="cargaForm" class="space-y-4">
                     <div>
-                        <label class="block font-semibold mb-1">Estación</label>
-                        <select name="estacion_id" id="cargaEstacion" class="w-full border px-3 py-2 rounded" required>
+                        <label class="block font-semibold mb-1 text-sm sm:text-base">Estación</label>
+                        <select name="estacion_id" id="cargaEstacion"
+                            class="w-full border px-3 py-2 rounded text-sm sm:text-base" required>
                             <option value="">Selecciona estación</option>
-                            <!-- Las opciones se llenarán dinámicamente -->
                         </select>
                     </div>
                     <div>
-                        <label class="block font-semibold mb-1">Cantidad (litros)</label>
+                        <label class="block font-semibold mb-1 text-sm sm:text-base">Cantidad (litros)</label>
                         <input name="cantidad" type="number" min="1" step="1" placeholder="Ej: 10"
-                            class="w-full border px-3 py-2 rounded" required>
+                            class="w-full border px-3 py-2 rounded text-sm sm:text-base" required>
                     </div>
-                    <div id="cargaError" class="text-red-600 text-sm"></div>
-                    <button type="submit" class="w-full bg-green-600 text-white py-2 rounded hover:bg-green-700">Guardar
+                    <div id="cargaError" class="text-red-600 text-xs sm:text-sm"></div>
+                    <button type="submit"
+                        class="w-full bg-green-600 text-white py-2 rounded hover:bg-green-700 text-sm sm:text-base">Guardar
                         carga</button>
                 </form>
             </div>
@@ -159,7 +177,7 @@
 
     <!-- Mensaje de éxito -->
     <div id="mensajeExito"
-        class="fixed top-6 left-1/2 -translate-x-1/2 bg-green-500 text-white px-6 py-3 rounded shadow-lg hidden z-50">
+        class="fixed top-6 left-1/2 -translate-x-1/2 bg-green-500 text-white px-6 py-3 rounded shadow-lg hidden z-50 text-sm sm:text-base">
         ¡Registro guardado correctamente!
     </div>
 
@@ -253,7 +271,7 @@
                     tipo: vehiculo?.tipo || '',
                     es_institucional: !!institucional,
                     nombre_institucion: institucional?.nombre_institucion || '',
-                    foto: vehiculo?.foto || null, // <-- ESTA LÍNEA ES CLAVE
+                    foto: vehiculo?.foto || null,
                     vehiculo_id: vehiculo?.id,
                     ultima_carga
                 };
@@ -277,18 +295,18 @@
             const resultados = document.getElementById('resultados');
             const fotoUrl = data.foto || "https://placehold.co/120x80?text=Sin+foto";
             const tarjeta = document.createElement('div');
-            tarjeta.className = "bg-white rounded shadow flex gap-4 p-4 items-center relative";
+            tarjeta.className = "bg-white rounded shadow flex flex-col sm:flex-row gap-4 p-4 items-center relative";
             tarjeta.innerHTML = `
-            <img src="${fotoUrl}" alt="Foto" class="w-32 h-20 object-cover rounded border">
-            <div class="flex-1">
-                <div class="font-bold text-lg">${data.nombre} (${data.ci})</div>
-                <div class="text-gray-600">${data.es_funcionario ? 'Funcionario Público, Credencial: ' + data.numero_credencial : 'No funcionario'}</div>
-                <div class="mt-1">Vehículo: <span class="font-semibold">${data.placa}</span> (${data.tipo})<br>
-                N° Chasis: ${data.numero_crasis} ${data.es_institucional ? '<br>Institucional: ' + data.nombre_institucion : ''}</div>
-                <div class="mt-1 carga-info"></div>
-                <button class="bg-green-600 text-white px-3 py-1 rounded mt-2 cargar-btn">Cargar</button>
-            </div>
-        `;
+                <img src="${fotoUrl}" alt="Foto" class="w-44 h-32 sm:w-56 sm:h-40 object-cover rounded border mb-2 sm:mb-0">
+                <div class="flex-1 w-full">
+                    <div class="font-bold text-base sm:text-lg">${data.nombre} (${data.ci})</div>
+                    <div class="text-gray-600 text-sm sm:text-base">${data.es_funcionario ? 'Funcionario Público, Credencial: ' + data.numero_credencial : 'No funcionario'}</div>
+                    <div class="mt-1 text-sm sm:text-base">Vehículo: <span class="font-semibold">${data.placa}</span> (${data.tipo})<br>
+                    N° Chasis: ${data.numero_crasis} ${data.es_institucional ? '<br>Institucional: ' + data.nombre_institucion : ''}</div>
+                    <div class="mt-1 carga-info"></div>
+                    <button class="bg-green-600 text-white px-3 py-1 rounded mt-2 text-xs sm:text-sm cargar-btn">Cargar</button>
+                </div>
+            `;
             // Botón cargar
             tarjeta.querySelector('.cargar-btn').onclick = function () {
                 abrirModalCarga(data.vehiculo_id, tarjeta);
@@ -296,7 +314,7 @@
             // Mostrar última carga si existe
             if (data.ultima_carga) {
                 tarjeta.querySelector('.carga-info').innerHTML = `
-                <div class="mt-2 text-sm text-green-700">
+                <div class="mt-2 text-xs sm:text-sm text-green-700">
                     Última carga: ${data.ultima_carga.cantidad} L en ${data.ultima_carga.estacion_nombre} (${data.ultima_carga.fecha})
                 </div>
             `;
@@ -314,7 +332,7 @@
         function abrirModalCarga(vehiculo_id, tarjetaDiv) {
             cargaVehiculoId = vehiculo_id;
             cargaTarjetaDiv = tarjetaDiv;
-            cargarEstacionesComboBox(); // Llenar el combo box dinámicamente
+            cargarEstacionesComboBox();
             document.getElementById('cargaForm').reset();
             document.getElementById('cargaError').innerText = '';
             document.getElementById('modalCarga').classList.remove('hidden');
@@ -332,18 +350,10 @@
                 document.getElementById('cargaError').innerText = "Completa todos los campos.";
                 return;
             }
-            // Validar que cantidad sea entero positivo
             if (!/^\d+$/.test(cantidad) || parseInt(cantidad) < 1) {
                 document.getElementById('cargaError').innerText = "Ingresa un valor entero positivo.";
                 return;
             }
-            // AGREGA ESTE CONSOLE.LOG AQUÍ
-            console.log({
-                vehiculo_id: cargaVehiculoId,
-                estacion_id: estacion_id,
-                cantidad: parseInt(cantidad, 10)
-            });
-            // Guardar en backend (convertir cantidad a entero)
             let res = await fetch('/cargas_combustible', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -357,14 +367,12 @@
                 document.getElementById('cargaError').innerText = "Error al guardar la carga.";
                 return;
             }
-            // Obtener nombre estación y fecha
             const estacion = document.querySelector(`#cargaEstacion option[value="${estacion_id}"]`);
             const estacionNombre = estacion ? estacion.textContent : '-';
             const fecha = new Date().toLocaleString();
-            // Mostrar en la tarjeta
             if (cargaTarjetaDiv) {
                 cargaTarjetaDiv.querySelector('.carga-info').innerHTML = `
-            <div class="mt-2 text-sm text-green-700">
+            <div class="mt-2 text-xs sm:text-sm text-green-700">
                 Última carga: ${cantidad} L en ${estacionNombre} (${fecha})
             </div>
         `;
@@ -372,7 +380,7 @@
             cerrarModalCarga();
         };
 
-        // Buscar por nombre, placa o CI (al escribir o al hacer click en buscar)
+        // Buscar por nombre, placa o CI
         function filtrarRegistros() {
             const q = document.getElementById('busqueda').value.trim().toLowerCase();
             const filtrados = registros.filter(data =>
@@ -416,13 +424,11 @@
             }
 
             // 1. Crear persona
-            console.log("Enviando persona:", { nombre, ci });
             let personaRes = await fetch('/personas', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ nombre, ci })
             });
-            console.log("Respuesta persona:", personaRes.status);
             if (!personaRes.ok) {
                 const errorText = await personaRes.text();
                 document.getElementById('registroError').innerText = "Error al crear persona: " + errorText;
@@ -432,13 +438,11 @@
 
             // 2. Si es funcionario, crear funcionario_publico
             if (es_funcionario) {
-                console.log("Enviando funcionario:", { persona_id: persona.id, numero_credencial });
                 let funcRes = await fetch('/funcionarios_publicos', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ persona_id: persona.id, numero_credencial })
                 });
-                console.log("Respuesta funcionario:", funcRes.status);
                 if (!funcRes.ok) {
                     const errorText = await funcRes.text();
                     document.getElementById('registroError').innerText = "Error al crear funcionario público: " + errorText;
@@ -450,9 +454,7 @@
             let fotoUrl = null;
             if (foto) {
                 const nombreArchivo = `vehiculo_${Date.now()}_${placa}.jpg`;
-                console.log("Subiendo imagen a Supabase:", nombreArchivo, foto);
                 fotoUrl = await subirImagenASupabase(foto, nombreArchivo);
-                console.log("URL de la foto subida:", fotoUrl);
                 if (!fotoUrl) {
                     document.getElementById('registroError').innerText = "Error al subir la imagen.";
                     return;
@@ -460,13 +462,11 @@
             }
 
             // 4. Crear vehículo (ahora incluye foto)
-            console.log("Enviando vehículo:", { numero_crasis, placa, tipo, foto: fotoUrl });
             let vehiculoRes = await fetch('/vehiculos', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ numero_crasis, placa, tipo, foto: fotoUrl })
             });
-            console.log("Respuesta vehículo:", vehiculoRes.status);
             if (!vehiculoRes.ok) {
                 const errorText = await vehiculoRes.text();
                 document.getElementById('registroError').innerText = "Error al crear vehículo: " + errorText;
@@ -516,7 +516,6 @@
             mostrarRegistros(registros);
         };
 
-        // ...resto del código igual...
         window.addEventListener('DOMContentLoaded', cargarRegistros);
     </script>
 </body>
