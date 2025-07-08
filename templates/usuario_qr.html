@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Mi QR de Vehículo</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen flex items-center justify-center">
+    <div class="bg-white rounded shadow-lg p-8 w-full max-w-sm">
+        <h1 class="text-xl font-bold text-blue-700 mb-6 text-center">Acceso a QR de Vehículo</h1>
+        <form id="loginForm" class="space-y-4">
+            <div>
+                <input name="placa" type="text" placeholder="Placa (usuario)" class="w-full border px-3 py-2 rounded" required>
+            </div>
+            <div>
+                <input name="ci" type="password" placeholder="CI (contraseña)" class="w-full border px-3 py-2 rounded" required>
+            </div>
+            <div id="loginError" class="text-red-600 text-sm"></div>
+            <button type="submit" class="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700">Ingresar</button>
+        </form>
+        <div id="qrSection" class="hidden mt-8 text-center">
+            <div id="qrContainer"></div>
+            <a id="descargarQR" href="#" class="mt-4 inline-block bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">Descargar QR</a>
+        </div>
+    </div>
+    <script>
+        document.getElementById('loginForm').onsubmit = async function(e) {
+            e.preventDefault();
+            const placa = this.placa.value.trim();
+            const ci = this.ci.value.trim();
+            document.getElementById('loginError').innerText = '';
+            const res = await fetch('/usuario_qr_login', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ placa, ci })
+            });
+            const data = await res.json();
+            if (data.qr_url) {
+                document.getElementById('loginForm').classList.add('hidden');
+                document.getElementById('qrSection').classList.remove('hidden');
+                document.getElementById('qrContainer').innerHTML = `
+                    <img src="${data.qr_url}" alt="QR" class="mx-auto w-40 h-40"/>
+                    <div class="mt-2 text-sm">Usuario: <b>${placa}</b></div>
+                    <div class="text-sm">Contraseña: <b>${ci}</b></div>
+                `;
+                document.getElementById('descargarQR').href = data.qr_url;
+                document.getElementById('descargarQR').setAttribute('data-url', data.qr_url);
+            } else {
+                document.getElementById('loginError').innerText = data.error || "Credenciales incorrectas.";
+            }
+        };
+
+        document.getElementById('descargarQR').onclick = async function(e) {
+            e.preventDefault();
+            const imgUrl = this.getAttribute('data-url');
+            if (!imgUrl) return;
+            // Descarga la imagen como blob
+            const response = await fetch(imgUrl);
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'qr_vehiculo.png';
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            window.URL.revokeObjectURL(url);
+        };
+    </script>
+</body>
+</html>

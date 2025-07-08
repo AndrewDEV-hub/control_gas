@@ -8,3 +8,4 @@ class Vehiculo(db.Model):
     tipo = db.Column(db.Text, nullable=False)
     foto = db.Column(db.Text, nullable=True)
     verificado = db.Column(db.Boolean, default=False, nullable=False)
+    qr_url = db.Column(db.Text, nullable=True)

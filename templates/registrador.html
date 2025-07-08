@@ -12,7 +12,7 @@
         // Configura tu cliente Supabase aquí
         const supabase = window.supabase.createClient(
             'https://wgczmcheqqffemfxfudc.supabase.co',
-            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndnY3ptY2hlcXFmZmVtZnhmdWRjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE2OTE3MDQsImV4cCI6MjA2NzI2NzcwNH0.lXpXV7cHp7s_4pbSJRarzTKNCR9Aj9if714ncEyKRZs'
+            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndnY3ptY2hlcXFmZmVtZnhmdWRjIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1MTY5MTcwNCwiZXhwIjoyMDY3MjY3NzA0fQ.n_nzBLg53_UtOBOJZEC8soyr6hclBa68TzudMeDT29E'
         );
         // Prueba de conexión
         supabase
@@ -184,6 +184,60 @@
         ¡Registro guardado correctamente!
     </div>
 
+    <!-- Botón para mostrar QR de acceso a usuario -->
+    <button id="mostrarQrAccesoBtn"
+        class="fixed bottom-6 right-6 bg-purple-600 text-white px-4 py-3 rounded-full shadow-lg hover:bg-purple-700 text-base z-50 flex items-center gap-2">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 inline" fill="none" viewBox="0 0 24 24"
+            stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M9 17v-2a4 4 0 014-4h3m4 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        QR acceso cliente
+    </button>
+
+    <!-- Botón flotante Escanear QR -->
+<button id="escanearQrBtn"
+    class="fixed bottom-6 left-6 bg-yellow-500 text-white px-4 py-3 rounded-full shadow-lg hover:bg-yellow-600 text-base z-50 flex items-center gap-2">
+    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 inline" fill="none" viewBox="0 0 24 24"
+        stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M15 10l4.553-2.276A2 2 0 0020 6.382V5a2 2 0 00-2-2H6a2 2 0 00-2 2v1.382a2 2 0 00.447 1.342L9 10m6 0v10m0 0H9m6 0a2 2 0 002-2v-2a2 2 0 00-2-2H9a2 2 0 00-2 2v2a2 2 0 002 2z" />
+    </svg>
+    Escanear QR
+</button>
+
+    <!-- Modal para mostrar el QR -->
+    <div id="modalQrAcceso" class="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-lg shadow-lg p-8 flex flex-col items-center relative">
+            <button onclick="document.getElementById('modalQrAcceso').classList.add('hidden')"
+                class="absolute top-2 right-2 text-gray-400 hover:text-red-500 text-2xl">&times;</button>
+            <h2 class="text-lg font-bold mb-4 text-purple-700">Acceso para usuarios de vehículos</h2>
+            <canvas id="qrCanvasAcceso" class="mb-4"></canvas>
+            <div class="text-xs text-gray-600">Escanea este QR para acceder a la vista de usuario</div>
+            <a id="enlaceUsuarioQr" href="/usuario_qr" class="mt-2 text-blue-600 underline text-sm">Ir a vista
+                usuario</a>
+        </div>
+    </div>
+
+    <!-- Modal para mostrar la tarjeta escaneada -->
+    <div id="modalTarjetaEscaneada" class="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-lg shadow-lg p-8 flex flex-col items-center relative max-w-md w-full">
+            <button onclick="document.getElementById('modalTarjetaEscaneada').classList.add('hidden')"
+                class="absolute top-2 right-2 text-gray-400 hover:text-red-500 text-2xl">&times;</button>
+            <div id="tarjetaEscaneadaContenido" class="w-full"></div>
+        </div>
+    </div>
+
+    <!-- Modal para escanear QR -->
+    <div id="modalEscanearQr" class="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-lg shadow-lg p-6 flex flex-col items-center relative max-w-md w-full">
+            <button onclick="cerrarModalEscanearQr()" class="absolute top-2 right-2 text-gray-400 hover:text-red-500 text-2xl">&times;</button>
+            <h2 class="text-lg font-bold mb-4 text-yellow-700">Escanear QR</h2>
+            <video id="videoQr" class="w-full rounded mb-4" autoplay></video>
+            <div id="escanearQrError" class="text-red-600 text-sm"></div>
+        </div>
+    </div>
+
     <script>
         // Mostrar/ocultar campos en el modal
         document.getElementById('funcionarioCheck').addEventListener('change', function () {
@@ -311,7 +365,7 @@
                 lista.forEach(data => mostrarTarjeta(data, false));
             }
         }
-        
+
         // Mostrar tarjeta de registro debajo de la barra de búsqueda
         function mostrarTarjeta(data, prepend = true) {
             const resultados = document.getElementById('resultados');
@@ -327,6 +381,22 @@
             const disabled = puedeCargar ? '' : 'disabled style="opacity:0.5;cursor:not-allowed;"';
             const tarjeta = document.createElement('div');
             tarjeta.className = "bg-white rounded shadow flex flex-col sm:flex-row gap-4 p-4 items-center relative";
+            tarjeta.dataset.vehiculoId = data.vehiculo_id; // Para identificar la tarjeta
+
+            // --- QR HTML ---
+            let qrHtml = '';
+            if (data.qr_url) {
+                qrHtml = `
+                    <div class="mt-2 flex flex-col items-center">
+                        <img src="${data.qr_url}" alt="QR" class="w-24 h-24"/>
+                        <div class="text-xs mt-1">usuario: ${data.placa}</div>
+                        <div class="text-xs">contraseña: ${data.ci}</div>
+                    </div>
+                `;
+            } else {
+                qrHtml = `<button class="bg-blue-600 text-white px-3 py-1 rounded mt-2 text-xs sm:text-sm generar-qr-btn">Mostrar QR</button>`;
+            }
+
             tarjeta.innerHTML = `
                 ${leyenda}
                 <img src="${fotoUrl}" alt="Foto" class="w-44 h-32 sm:w-56 sm:h-40 object-cover rounded border mb-2 sm:mb-0">
@@ -343,21 +413,43 @@
                     <div class="mt-1 carga-info"></div>
                     <button class="bg-green-600 text-white px-3 py-1 rounded mt-2 text-xs sm:text-sm cargar-btn" ${disabled}>Cargar</button>
                     ${!cumpleDia && restriccionDiaActiva ? `<div class="text-xs text-red-600 mt-1">No puede cargar hoy según la terminación de CI</div>` : ''}
+                    ${qrHtml}
                 </div>
             `;
+
             // Botón cargar
             tarjeta.querySelector('.cargar-btn').onclick = function () {
                 if (puedeCargar) {
                     abrirModalCarga(data.vehiculo_id, tarjeta);
                 }
             };
+
+            // Botón Generar QR
+            const qrBtn = tarjeta.querySelector('.generar-qr-btn');
+            if (qrBtn) {
+                qrBtn.onclick = async function () {
+                    qrBtn.disabled = true;
+                    qrBtn.innerText = "Generando...";
+                    const res = await fetch(`/vehiculos/${data.vehiculo_id}/generar_qr`, { method: 'POST' });
+                    const result = await res.json();
+                    if (result.qr_url) {
+                        data.qr_url = result.qr_url;
+                        mostrarRegistros(registros); // Recarga las tarjetas para mostrar el QR
+                    } else {
+                        qrBtn.disabled = false;
+                        qrBtn.innerText = "Generar QR";
+                        alert(result.error || "Error al generar QR");
+                    }
+                };
+            }
+
             // Mostrar última carga si existe
             if (data.ultima_carga) {
                 tarjeta.querySelector('.carga-info').innerHTML = `
-            <div class="mt-2 text-xs sm:text-sm text-green-700">
-                Última carga: ${data.ultima_carga.cantidad} L en ${data.ultima_carga.estacion_nombre} (${data.ultima_carga.fecha})
-            </div>
-        `;
+                    <div class="mt-2 text-xs sm:text-sm text-green-700">
+                        Última carga: ${data.ultima_carga.cantidad} L en ${data.ultima_carga.estacion_nombre} (${data.ultima_carga.fecha})
+                    </div>
+                `;
             }
             if (prepend) {
                 resultados.prepend(tarjeta);
@@ -427,9 +519,9 @@
             };
             return mapa[dia] ? mapa[dia].includes(terminacion) : true;
         }
-        
 
-        
+
+
         // Modal cargar
         let cargaVehiculoId = null;
         let cargaTarjetaDiv = null;
@@ -612,6 +704,132 @@
             await cargarRegistros();
         };
 
+        // Generar QR de acceso a /usuario_qr
+        document.getElementById('mostrarQrAccesoBtn').onclick = function () {
+            const url = window.location.origin + '/usuario_qr';
+            const canvas = document.getElementById('qrCanvasAcceso');
+            // Limpia el canvas
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            // Usa una librería de QR (por ejemplo, QRious o qrious.min.js)
+            // Aquí usamos QRious desde CDN:
+            if (!window.QRious) {
+                const script = document.createElement('script');
+                script.src = 'https://cdn.jsdelivr.net/npm/qrious@4.0.2/dist/qrious.min.js';
+                script.onload = () => {
+                    generarQrAcceso(url, canvas);
+                };
+                document.body.appendChild(script);
+            } else {
+                generarQrAcceso(url, canvas);
+            }
+            document.getElementById('modalQrAcceso').classList.remove('hidden');
+            document.getElementById('enlaceUsuarioQr').href = url;
+        };
+
+        function generarQrAcceso(url, canvas) {
+            const qr = new QRious({
+                element: canvas,
+                value: url,
+                size: 200
+            });
+        }
+
+        // --- Escanear QR ---
+        let stream = null;
+        let qrScanner = null;
+
+        document.getElementById('escanearQrBtn').onclick = async function () {
+            document.getElementById('modalEscanearQr').classList.remove('hidden');
+            document.getElementById('escanearQrError').innerText = '';
+            const video = document.getElementById('videoQr');
+            // Usa la librería qr-scanner
+            if (!window.QRScannerLibLoaded) {
+                const script = document.createElement('script');
+                script.src = 'https://unpkg.com/qr-scanner@1.4.2/qr-scanner.umd.min.js';
+                script.onload = () => {
+                    window.QRScannerLibLoaded = true;
+                    iniciarEscaneoQr(video);
+                };
+                document.body.appendChild(script);
+            } else {
+                iniciarEscaneoQr(video);
+            }
+        };
+
+        function cerrarModalEscanearQr() {
+            document.getElementById('modalEscanearQr').classList.add('hidden');
+            if (qrScanner) {
+                qrScanner.stop();
+                qrScanner.destroy();
+                qrScanner = null;
+            }
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+                stream = null;
+            }
+        }
+
+        async function iniciarEscaneoQr(video) {
+            if (qrScanner) {
+                qrScanner.stop();
+                qrScanner.destroy();
+                qrScanner = null;
+            }
+            try {
+                stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+                video.srcObject = stream;
+                video.play();
+                qrScanner = new QrScanner(video, result => {
+                    cerrarModalEscanearQr();
+                    buscarPorQr(result.data);
+                });
+                qrScanner.start();
+            } catch (err) {
+                document.getElementById('escanearQrError').innerText = "No se pudo acceder a la cámara.";
+            }
+        }
+
+        async function buscarPorQr(qrData) {
+            // Espera que el QR contenga la placa y el ci en el formato: Placa:XXX\nCI:YYY
+            let placa = null, ci = null;
+            const match = qrData.match(/Placa:(.+)\nCI:(.+)/);
+            if (match) {
+                placa = match[1].trim();
+                ci = match[2].trim();
+            }
+            if (!placa || !ci) {
+                alert("QR inválido.");
+                return;
+            }
+            // Busca el vehículo y la persona en los registros ya cargados
+            const registro = registros.find(r => r.placa === placa && r.ci === ci);
+            if (!registro) {
+                alert("No se encontró el registro para este QR.");
+                return;
+            }
+            mostrarTarjetaEscaneada(registro);
+        }
+
+        function mostrarTarjetaEscaneada(data) {
+            const contenido = document.getElementById('tarjetaEscaneadaContenido');
+            contenido.innerHTML = `
+        <div class="flex flex-col items-center">
+            <img src="${data.foto || 'https://placehold.co/120x80?text=Sin+foto'}" alt="Foto" class="w-32 h-24 object-cover rounded border mb-2">
+            <div class="font-bold text-lg mb-1">${data.nombre} (${data.ci})</div>
+            <div class="text-gray-600 text-sm mb-1">${data.es_funcionario ? 'Funcionario Público, Credencial: ' + data.numero_credencial : 'No funcionario'}</div>
+            <div class="mb-1 text-sm">Vehículo: <span class="font-semibold">${data.placa}</span> (${data.tipo})<br>
+            N° Chasis: ${data.numero_crasis} ${data.es_institucional ? '<br>Institucional: ' + data.nombre_institucion : ''}</div>
+            <div class="mb-1 text-xs text-blue-700">
+                Cargado este mes: <span class="font-semibold">${data.total_cargado_mes} L</span> /
+                <span class="font-semibold">119 L</span><br>
+                Restante: <span class="font-semibold">${data.restante_mes} L</span>
+            </div>
+            ${data.qr_url ? `<img src="${data.qr_url}" alt="QR" class="w-24 h-24 mt-2"/>` : ''}
+        </div>
+    `;
+            document.getElementById('modalTarjetaEscaneada').classList.remove('hidden');
+        }
         window.addEventListener('DOMContentLoaded', () => {
             cargarRegistros();
             cargarRestriccionDia();
