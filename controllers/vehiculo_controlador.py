@@ -175,3 +175,34 @@ def usuario_qr_login():
     if not vehiculo.qr_url:
         return jsonify({'error': 'QR no generado aún, solicita al registrador.'}), 400
     return jsonify({'qr_url': vehiculo.qr_url})
+@vehiculo_bp.route('/vehiculos/buscar_por_placa_ci')
+def buscar_por_placa_ci():
+    placa = request.args.get('placa')
+    ci = request.args.get('ci')
+    vehiculo = Vehiculo.query.filter_by(placa=placa).first()
+    if not vehiculo:
+        return jsonify({'error': 'Vehículo no encontrado'}), 404
+    persona_vehiculo = PersonaVehiculo.query.filter_by(vehiculo_id=vehiculo.id).first()
+    if not persona_vehiculo:
+        return jsonify({'error': 'No hay persona asociada'}), 404
+    persona = Persona.query.get(persona_vehiculo.persona_id)
+    if not persona or str(persona.ci) != str(ci):
+        return jsonify({'error': 'Credenciales incorrectas'}), 404
+    # Calcula datos adicionales si lo necesitas
+    return jsonify({
+        'nombre': persona.nombre,
+        'ci': persona.ci,
+        'es_funcionario': hasattr(persona, 'funcionario_publico'),
+        'numero_credencial': getattr(persona, 'numero_credencial', ''),
+        'numero_crasis': vehiculo.numero_crasis,
+        'placa': vehiculo.placa,
+        'tipo': vehiculo.tipo,
+        'es_institucional': False,  # Completa según tu lógica
+        'nombre_institucion': '',   # Completa según tu lógica
+        'foto': vehiculo.foto,
+        'vehiculo_id': vehiculo.id,
+        'verificado': vehiculo.verificado,
+        'total_cargado_mes': 0,     # Calcula si lo necesitas
+        'restante_mes': 0,          # Calcula si lo necesitas
+        'qr_url': vehiculo.qr_url
+    })

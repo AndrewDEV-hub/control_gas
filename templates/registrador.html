@@ -49,8 +49,31 @@
 
     <div class="max-w-3xl mx-auto pt-24 pb-8 px-2 sm:px-4">
         <h1 class="text-xl sm:text-2xl font-bold text-blue-700 mb-6 text-center">Panel del Registrador</h1>
-        <!-- Barra de búsqueda -->
-        <div class="flex flex-col sm:flex-row gap-2 mb-6">
+        <!-- Barra de búsqueda y botones QR juntos y responsivos -->
+        <div class="flex flex-col sm:flex-row gap-2 mb-6 items-center">
+            <!-- Botón Escanear QR -->
+            <button id="escanearQrBtn"
+                class="bg-yellow-500 text-white rounded-full shadow-lg hover:bg-yellow-600 flex items-center justify-center
+               w-12 h-12 sm:w-auto sm:h-auto sm:rounded px-0 sm:px-4 py-0 sm:py-2 text-base transition-all duration-200">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 sm:h-5 sm:w-5" fill="none" viewBox="0 0 24 24"
+                    stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M15 10l4.553-2.276A2 2 0 0020 6.382V5a2 2 0 00-2-2H6a2 2 0 00-2 2v1.382a2 2 0 00.447 1.342L9 10m6 0v10m0 0H9m6 0a2 2 0 002-2v-2a2 2 0 00-2-2H9a2 2 0 00-2 2v2a2 2 0 002 2z" />
+                </svg>
+                <span class="hidden sm:inline ml-2">Scan</span>
+            </button>
+            <!-- Botón QR acceso cliente -->
+            <button id="mostrarQrAccesoBtn"
+                class="bg-purple-600 text-white rounded-full shadow-lg hover:bg-purple-700 flex items-center justify-center
+               w-12 h-12 sm:w-auto sm:h-auto sm:rounded px-0 sm:px-4 py-0 sm:py-2 text-base transition-all duration-200">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 sm:h-5 sm:w-5" fill="none" viewBox="0 0 24 24"
+                    stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M9 17v-2a4 4 0 014-4h3m4 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span class="hidden sm:inline ml-2">Cliente</span>
+            </button>
+            <!-- Input de búsqueda ocupa el espacio restante -->
             <input id="busqueda" type="text" placeholder="Buscar por nombre, placa o CI..."
                 class="flex-1 px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-400 text-sm sm:text-base">
             <div class="flex gap-2">
@@ -184,27 +207,7 @@
         ¡Registro guardado correctamente!
     </div>
 
-    <!-- Botón para mostrar QR de acceso a usuario -->
-    <button id="mostrarQrAccesoBtn"
-        class="fixed bottom-6 right-6 bg-purple-600 text-white px-4 py-3 rounded-full shadow-lg hover:bg-purple-700 text-base z-50 flex items-center gap-2">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 inline" fill="none" viewBox="0 0 24 24"
-            stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                d="M9 17v-2a4 4 0 014-4h3m4 0a9 9 0 11-18 0 9 9 0 0118 0z" />
-        </svg>
-        QR acceso cliente
-    </button>
-
-    <!-- Botón flotante Escanear QR -->
-<button id="escanearQrBtn"
-    class="fixed bottom-6 left-6 bg-yellow-500 text-white px-4 py-3 rounded-full shadow-lg hover:bg-yellow-600 text-base z-50 flex items-center gap-2">
-    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 inline" fill="none" viewBox="0 0 24 24"
-        stroke="currentColor">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-            d="M15 10l4.553-2.276A2 2 0 0020 6.382V5a2 2 0 00-2-2H6a2 2 0 00-2 2v1.382a2 2 0 00.447 1.342L9 10m6 0v10m0 0H9m6 0a2 2 0 002-2v-2a2 2 0 00-2-2H9a2 2 0 00-2 2v2a2 2 0 002 2z" />
-    </svg>
-    Escanear QR
-</button>
+    
 
     <!-- Modal para mostrar el QR -->
     <div id="modalQrAcceso" class="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 hidden">
@@ -220,7 +223,8 @@
     </div>
 
     <!-- Modal para mostrar la tarjeta escaneada -->
-    <div id="modalTarjetaEscaneada" class="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 hidden">
+    <div id="modalTarjetaEscaneada"
+        class="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 hidden">
         <div class="bg-white rounded-lg shadow-lg p-8 flex flex-col items-center relative max-w-md w-full">
             <button onclick="document.getElementById('modalTarjetaEscaneada').classList.add('hidden')"
                 class="absolute top-2 right-2 text-gray-400 hover:text-red-500 text-2xl">&times;</button>
@@ -231,7 +235,8 @@
     <!-- Modal para escanear QR -->
     <div id="modalEscanearQr" class="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 hidden">
         <div class="bg-white rounded-lg shadow-lg p-6 flex flex-col items-center relative max-w-md w-full">
-            <button onclick="cerrarModalEscanearQr()" class="absolute top-2 right-2 text-gray-400 hover:text-red-500 text-2xl">&times;</button>
+            <button onclick="cerrarModalEscanearQr()"
+                class="absolute top-2 right-2 text-gray-400 hover:text-red-500 text-2xl">&times;</button>
             <h2 class="text-lg font-bold mb-4 text-yellow-700">Escanear QR</h2>
             <video id="videoQr" class="w-full rounded mb-4" autoplay></video>
             <div id="escanearQrError" class="text-red-600 text-sm"></div>
@@ -802,13 +807,14 @@
                 alert("QR inválido.");
                 return;
             }
-            // Busca el vehículo y la persona en los registros ya cargados
-            const registro = registros.find(r => r.placa === placa && r.ci === ci);
-            if (!registro) {
+            // Busca en el backend
+            const res = await fetch(`/vehiculos/buscar_por_placa_ci?placa=${encodeURIComponent(placa)}&ci=${encodeURIComponent(ci)}`);
+            if (!res.ok) {
                 alert("No se encontró el registro para este QR.");
                 return;
             }
-            mostrarTarjetaEscaneada(registro);
+            const data = await res.json();
+            mostrarTarjetaEscaneada(data);
         }
 
         function mostrarTarjetaEscaneada(data) {
