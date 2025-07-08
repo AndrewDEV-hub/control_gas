@@ -7,6 +7,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Agrega el cliente de Supabase -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+    <script src="https://unpkg.com/html5-qrcode"></script>
     <script>
         // Configura tu cliente Supabase aquí
         const supabase = window.supabase.createClient(
@@ -52,6 +53,8 @@
                 class="flex-1 px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-400">
             <button id="buscarBtn" class="bg-gray-300 text-gray-700 px-4 py-2 rounded hover:bg-gray-400">Buscar</button>
             <button id="nuevoBtn" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Nuevo</button>
+            <button id="escanearQRBtn" class="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700 mb-4">Escanear QR</button>
+            <div id="qr-reader" class="mb-4"></div>
         </div>
         <!-- Resultados -->
         <div id="resultados" class="space-y-4"></div>
@@ -164,6 +167,42 @@
     </div>
 
     <script>
+        
+        document.getElementById('escanearQRBtn').onclick = function () {
+            document.getElementById('qr-reader').innerHTML = "";
+            const qrReader = new Html5Qrcode("qr-reader");
+            qrReader.start(
+                { facingMode: "environment" },
+                {
+                    fps: 10,
+                    qrbox: 250
+                },
+                qrCodeMessage => {
+                    // Procesar el QR
+                    qrReader.stop();
+                    document.getElementById('qr-reader').innerHTML = "";
+                    // Extraer el ID de la relación del QR
+                    const partes = qrCodeMessage.split('|');
+                    const relacion_id = partes[2];
+                    if (relacion_id) {
+                        // Buscar el registro en la lista cargada o pedirlo al backend
+                        const registro = registros.find(r => r.relacion_id == relacion_id);
+                        if (registro) {
+                            // Mostrar la tarjeta del registro escaneado
+                            mostrarRegistros([registro]);
+                        } else {
+                            alert("No se encontró el registro para este QR.");
+                        }
+                    } else {
+                        alert("QR inválido.");
+                    }
+                },
+                errorMessage => {
+                    // Puedes mostrar errores si quieres
+                }
+            );
+        };
+
         // Mostrar/ocultar campos en el modal
         document.getElementById('funcionarioCheck').addEventListener('change', function () {
             document.getElementById('credencialDiv').classList.toggle('hidden', !this.checked);
@@ -255,7 +294,8 @@
                     nombre_institucion: institucional?.nombre_institucion || '',
                     foto: vehiculo?.foto || null, // <-- ESTA LÍNEA ES CLAVE
                     vehiculo_id: vehiculo?.id,
-                    ultima_carga
+                    ultima_carga,
+                    relacion_id: rel.id
                 };
             });
             mostrarRegistros(registros);
@@ -288,7 +328,29 @@
                 <div class="mt-1 carga-info"></div>
                 <button class="bg-green-600 text-white px-3 py-1 rounded mt-2 cargar-btn">Cargar</button>
             </div>
+            <button class="bg-blue-600 text-white px-3 py-1 rounded mt-2 qr-btn">Generar QR</button>
+            <div class="qr-container mt-2"></div>
         `;
+            
+
+            // ...dentro de mostrarTarjeta...
+            tarjeta.querySelector('.qr-btn').onclick = async function () {
+                // Llama al endpoint para generar el QR
+                console.log("relacion_id:", data.relacion_id);
+                const res = await fetch(`/personas_vehiculos/${data.relacion_id}/generar_qr`, { method: 'POST' });
+                if (res.ok) {
+                    const qrData = await res.json();
+                    tarjeta.querySelector('.qr-container').innerHTML = `
+                        <img src="${qrData.qr_url}" alt="QR" class="w-32 h-32 mt-2 border rounded">
+                        <div class="text-xs mt-1">Usuario: <b>${qrData.usuario_cliente}</b><br>Contraseña: <b>${qrData.password_cliente}</b></div>
+                        <a href="${qrData.qr_url}" download="qr_cliente.png" class="text-blue-700 underline text-xs">Descargar QR</a>
+                    `;
+                } else{
+                    console.log("Error al generar QR:", res);
+                    console.log(await res.text());
+                }
+            };
+        
             // Botón cargar
             tarjeta.querySelector('.cargar-btn').onclick = function () {
                 abrirModalCarga(data.vehiculo_id, tarjeta);
@@ -493,7 +555,20 @@
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ persona_id: persona.id, vehiculo_id: vehiculo.id })
             });
-            if (!relRes.ok) {
+            let relacion_id = null;
+            if (relRes.ok) {
+                // Intenta obtener el id de la relación creada (ajusta según tu backend)
+                const relData = await relRes.json();
+                // Si tu backend retorna el id, úsalo:
+                if (relData.id) {
+                    relacion_id = relData.id;
+                } else {
+                    // Si no retorna el id, haz un fetch para obtener la relación
+                    const relaciones = await fetch('/personas_vehiculos').then(r => r.json());
+                    const rel = relaciones.find(r => r.persona_id === persona.id && r.vehiculo_id === vehiculo.id);
+                    if (rel) relacion_id = rel.id;
+                }
+            } else {
                 const data = await relRes.json();
                 document.getElementById('registroError').innerText = data.error || "Error al asociar persona y vehículo.";
                 return;
@@ -510,7 +585,8 @@
                 numero_crasis, placa, tipo, es_institucional, nombre_institucion,
                 foto: fotoUrl,
                 vehiculo_id: vehiculo.id,
-                ultima_carga: null
+                ultima_carga: null,
+                relacion_id
             };
             registros.unshift(nuevoRegistro);
             mostrarRegistros(registros);

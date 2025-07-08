@@ -1,3 +1,6 @@
+import qrcode
+import io
+import base64
 from flask import Blueprint, request, jsonify
 from models import db, PersonaVehiculo, Persona, Vehiculo
 
@@ -33,7 +36,7 @@ def asociar_persona_vehiculo():
     relacion = PersonaVehiculo(persona_id=persona_id, vehiculo_id=vehiculo_id)
     db.session.add(relacion)
     db.session.commit()
-    return jsonify({'message': 'Relación creada'}), 201
+    return jsonify({'id': relacion.id, 'message': 'Relación creada'}), 201
 
 @persona_vehiculo_bp.route('/personas_vehiculos', methods=['GET'])
 def listar_personas_vehiculos():
@@ -45,3 +48,39 @@ def listar_personas_vehiculos():
             'vehiculo_id': r.vehiculo_id
         } for r in relaciones
     ])
+    
+@persona_vehiculo_bp.route('/personas_vehiculos/<int:rel_id>/generar_qr', methods=['POST'])
+def generar_qr_cliente(rel_id):
+    relacion = PersonaVehiculo.query.get_or_404(rel_id)
+    persona = Persona.query.get(relacion.persona_id)
+    vehiculo = Vehiculo.query.get(relacion.vehiculo_id)
+    usuario = vehiculo.placa
+    password = persona.ci
+
+    # Si ya existe el QR, no lo regenera
+    if relacion.qr_url and relacion.usuario_cliente and relacion.password_cliente:
+        return jsonify({
+            'qr_url': relacion.qr_url,
+            'usuario_cliente': relacion.usuario_cliente,
+            'password_cliente': relacion.password_cliente
+        })
+
+    # Generar QR con los datos
+    qr_data = f"{usuario}|{password}|{relacion.id}"
+    qr_img = qrcode.make(qr_data)
+    buf = io.BytesIO()
+    qr_img.save(buf, format='PNG')
+    qr_base64 = base64.b64encode(buf.getvalue()).decode('utf-8')
+    qr_url = f"data:image/png;base64,{qr_base64}"
+
+    # Guardar en la base de datos
+    relacion.qr_url = qr_url
+    relacion.usuario_cliente = usuario
+    relacion.password_cliente = password
+    db.session.commit()
+
+    return jsonify({
+        'qr_url': qr_url,
+        'usuario_cliente': usuario,
+        'password_cliente': password
+    })

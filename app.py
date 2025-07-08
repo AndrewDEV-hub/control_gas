@@ -5,6 +5,7 @@ import os
 from dotenv import load_dotenv
 from models import db
 from controllers import blueprints
+from controllers.cliente_controlador import cliente_bp
 
 load_dotenv()
 app = Flask(__name__)
@@ -16,6 +17,7 @@ if not db_url:
 app.config['SQLALCHEMY_DATABASE_URI'] = db_url
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.secret_key = "supersecreto"  # Cambia esto en producción
+app.register_blueprint(cliente_bp)
 
 db.init_app(app)
 migrate = Migrate(app, db) 
