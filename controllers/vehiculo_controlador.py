@@ -118,22 +118,34 @@ def generar_qr(vehiculo_id):
     if not persona:
         return jsonify({'error': 'No se encontró la persona'}), 400
 
-    # Si ya existe un QR, solo devuelve la info
-    if vehiculo.qr_url:
-        return jsonify({
-            'qr_url': vehiculo.qr_url,
-            'placa': vehiculo.placa,
-            'ci': persona.ci
-        })
+    filename = f"qr_{vehiculo.placa}.png"
+    storage_path = f"qr/{filename}"
+    public_url = f"{SUPABASE_URL}/storage/v1/object/public/{SUPABASE_BUCKET}/{storage_path}"
 
+    # Si ya existe un QR, verifica si el archivo existe en Supabase Storage
+    if vehiculo.qr_url:
+        # HEAD request para verificar existencia
+        check_url = f"{SUPABASE_URL}/storage/v1/object/{SUPABASE_BUCKET}/{storage_path}"
+        headers = {
+            "apikey": SUPABASE_KEY,
+            "Authorization": f"Bearer {SUPABASE_KEY}",
+        }
+        check_response = requests.head(check_url, headers=headers)
+        if check_response.status_code == 200:
+            # El archivo existe, devuelve la info
+            return jsonify({
+                'qr_url': vehiculo.qr_url,
+                'placa': vehiculo.placa,
+                'ci': persona.ci
+            })
+        # Si no existe, continúa para generar uno nuevo
+
+    # Genera un nuevo QR
     qr_data = f"Placa:{vehiculo.placa}\nCI:{persona.ci}"
     img = qrcode.make(qr_data)
     buffer = io.BytesIO()
     img.save(buffer, format="PNG")
     buffer.seek(0)
-
-    filename = f"qr_{vehiculo.placa}.png"
-    storage_path = f"qr/{filename}"
 
     headers = {
         "apikey": SUPABASE_KEY,
@@ -146,7 +158,6 @@ def generar_qr(vehiculo_id):
     if response.status_code not in (200, 201):
         return jsonify({'error': 'Error al subir QR a Supabase Storage', 'details': response.text}), 500
 
-    public_url = f"{SUPABASE_URL}/storage/v1/object/public/{SUPABASE_BUCKET}/{storage_path}"
     vehiculo.qr_url = public_url
     db.session.commit()
     return jsonify({
