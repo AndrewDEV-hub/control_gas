@@ -58,6 +58,8 @@
                     class="bg-gray-300 text-gray-700 px-4 py-2 rounded hover:bg-gray-400 text-sm sm:text-base">Buscar</button>
                 <button id="nuevoBtn"
                     class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 text-sm sm:text-base">Nuevo</button>
+                <button id="actualizarBtn"
+                    class="bg-gray-300 text-gray-700 px-4 py-2 rounded hover:bg-gray-400 text-sm sm:text-base">Actualizar</button>
             </div>
         </div>
         <!-- Resultados -->
@@ -202,7 +204,8 @@
                 preview.src = "https://placehold.co/120x80?text=Sin+foto";
             }
         });
-
+        //boton de actualizar la pagina
+        document.getElementById('actualizarBtn').onclick = cargarRegistros;
         // Abrir/cerrar modal
         document.getElementById('nuevoBtn').onclick = function () {
             document.getElementById('modalRegistro').classList.remove('hidden');
@@ -241,6 +244,9 @@
             const vehiculos = await fetch('/vehiculos').then(r => r.json());
             const funcionarios = await fetch('/funcionarios_publicos').then(r => r.json());
             const institucionales = await fetch('/vehiculos_institucionales').then(r => r.json());
+            const now = new Date();
+            const mesActual = now.getMonth();
+            const anioActual = now.getFullYear();
             cargasCombustible = await fetch('/cargas_combustible').then(r => r.json());
             estaciones = await fetch('/estaciones').then(r => r.json());
 
@@ -249,6 +255,7 @@
                 const vehiculo = vehiculos.find(v => v.id === rel.vehiculo_id);
                 const funcionario = funcionarios.find(f => f.persona_id === persona?.id);
                 const institucional = institucionales.find(i => i.vehiculo_id === vehiculo?.id);
+
                 // Buscar última carga de este vehículo
                 const cargasVehiculo = cargasCombustible.filter(c => c.vehiculo_id === vehiculo?.id);
                 let ultima_carga = null;
@@ -261,6 +268,17 @@
                         fecha: carga.fecha ? new Date(carga.fecha).toLocaleString() : ''
                     };
                 }
+
+                // Calcular total cargado en el mes por la persona (en todos sus vehículos)
+                const relacionesPersona = relaciones.filter(r => r.persona_id === persona?.id);
+                const vehiculosPersona = relacionesPersona.map(r => r.vehiculo_id);
+                const cargasMes = cargasCombustible.filter(c =>
+                    vehiculosPersona.includes(c.vehiculo_id) &&
+                    new Date(c.fecha).getMonth() === mesActual &&
+                    new Date(c.fecha).getFullYear() === anioActual
+                );
+                const totalMes = cargasMes.reduce((sum, c) => sum + Number(c.cantidad), 0);
+
                 return {
                     nombre: persona?.nombre || '',
                     ci: persona?.ci || '',
@@ -273,7 +291,10 @@
                     nombre_institucion: institucional?.nombre_institucion || '',
                     foto: vehiculo?.foto || null,
                     vehiculo_id: vehiculo?.id,
-                    ultima_carga
+                    verificado: vehiculo?.verificado || false,
+                    ultima_carga,
+                    total_cargado_mes: totalMes,
+                    restante_mes: Math.max(0, 119 - totalMes)
                 };
             });
             mostrarRegistros(registros);
@@ -294,30 +315,47 @@
         function mostrarTarjeta(data, prepend = true) {
             const resultados = document.getElementById('resultados');
             const fotoUrl = data.foto || "https://placehold.co/120x80?text=Sin+foto";
+            let leyenda = '';
+            if (data.verificado) {
+                leyenda = '<span class="inline-block bg-green-100 text-green-800 px-2 py-1 rounded text-xs font-semibold mb-2">Verificado</span>';
+            } else {
+                leyenda = '<span class="inline-block bg-yellow-100 text-yellow-800 px-2 py-1 rounded text-xs font-semibold mb-2">Verificación pendiente</span>';
+            }
+            // Solo puede cargar si está verificado y no superó el límite mensual
+            const puedeCargar = data.verificado && data.restante_mes > 0;
+            const disabled = puedeCargar ? '' : 'disabled style="opacity:0.5;cursor:not-allowed;"';
             const tarjeta = document.createElement('div');
             tarjeta.className = "bg-white rounded shadow flex flex-col sm:flex-row gap-4 p-4 items-center relative";
             tarjeta.innerHTML = `
-                <img src="${fotoUrl}" alt="Foto" class="w-44 h-32 sm:w-56 sm:h-40 object-cover rounded border mb-2 sm:mb-0">
-                <div class="flex-1 w-full">
-                    <div class="font-bold text-base sm:text-lg">${data.nombre} (${data.ci})</div>
-                    <div class="text-gray-600 text-sm sm:text-base">${data.es_funcionario ? 'Funcionario Público, Credencial: ' + data.numero_credencial : 'No funcionario'}</div>
-                    <div class="mt-1 text-sm sm:text-base">Vehículo: <span class="font-semibold">${data.placa}</span> (${data.tipo})<br>
-                    N° Chasis: ${data.numero_crasis} ${data.es_institucional ? '<br>Institucional: ' + data.nombre_institucion : ''}</div>
-                    <div class="mt-1 carga-info"></div>
-                    <button class="bg-green-600 text-white px-3 py-1 rounded mt-2 text-xs sm:text-sm cargar-btn">Cargar</button>
+            ${leyenda}
+            <img src="${fotoUrl}" alt="Foto" class="w-44 h-32 sm:w-56 sm:h-40 object-cover rounded border mb-2 sm:mb-0">
+            <div class="flex-1 w-full">
+                <div class="font-bold text-base sm:text-lg">${data.nombre} (${data.ci})</div>
+                <div class="text-gray-600 text-sm sm:text-base">${data.es_funcionario ? 'Funcionario Público, Credencial: ' + data.numero_credencial : 'No funcionario'}</div>
+                <div class="mt-1 text-sm sm:text-base">Vehículo: <span class="font-semibold">${data.placa}</span> (${data.tipo})<br>
+                N° Chasis: ${data.numero_crasis} ${data.es_institucional ? '<br>Institucional: ' + data.nombre_institucion : ''}</div>
+                <div class="mt-1 text-xs sm:text-sm text-blue-700">
+                    Cargado este mes: <span class="font-semibold">${data.total_cargado_mes} L</span> /
+                    <span class="font-semibold">119 L</span><br>
+                    Restante: <span class="font-semibold">${data.restante_mes} L</span>
                 </div>
-            `;
+                <div class="mt-1 carga-info"></div>
+                <button class="bg-green-600 text-white px-3 py-1 rounded mt-2 text-xs sm:text-sm cargar-btn" ${disabled}>Cargar</button>
+            </div>
+        `;
             // Botón cargar
             tarjeta.querySelector('.cargar-btn').onclick = function () {
-                abrirModalCarga(data.vehiculo_id, tarjeta);
+                if (puedeCargar) {
+                    abrirModalCarga(data.vehiculo_id, tarjeta);
+                }
             };
             // Mostrar última carga si existe
             if (data.ultima_carga) {
                 tarjeta.querySelector('.carga-info').innerHTML = `
-                <div class="mt-2 text-xs sm:text-sm text-green-700">
-                    Última carga: ${data.ultima_carga.cantidad} L en ${data.ultima_carga.estacion_nombre} (${data.ultima_carga.fecha})
-                </div>
-            `;
+            <div class="mt-2 text-xs sm:text-sm text-green-700">
+                Última carga: ${data.ultima_carga.cantidad} L en ${data.ultima_carga.estacion_nombre} (${data.ultima_carga.fecha})
+            </div>
+        `;
             }
             if (prepend) {
                 resultados.prepend(tarjeta);
@@ -367,19 +405,10 @@
                 document.getElementById('cargaError').innerText = "Error al guardar la carga.";
                 return;
             }
-            const estacion = document.querySelector(`#cargaEstacion option[value="${estacion_id}"]`);
-            const estacionNombre = estacion ? estacion.textContent : '-';
-            const fecha = new Date().toLocaleString();
-            if (cargaTarjetaDiv) {
-                cargaTarjetaDiv.querySelector('.carga-info').innerHTML = `
-            <div class="mt-2 text-xs sm:text-sm text-green-700">
-                Última carga: ${cantidad} L en ${estacionNombre} (${fecha})
-            </div>
-        `;
-            }
             cerrarModalCarga();
+            // Recarga los registros para actualizar los litros cargados y el botón
+            await cargarRegistros();
         };
-
         // Buscar por nombre, placa o CI
         function filtrarRegistros() {
             const q = document.getElementById('busqueda').value.trim().toLowerCase();
@@ -503,17 +532,8 @@
             cerrarModal();
             document.getElementById('mensajeExito').classList.remove('hidden');
             setTimeout(() => document.getElementById('mensajeExito').classList.add('hidden'), 2000);
-
-            // 8. Agregar tarjeta al listado y a la lista de registros
-            const nuevoRegistro = {
-                nombre, ci, es_funcionario, numero_credencial,
-                numero_crasis, placa, tipo, es_institucional, nombre_institucion,
-                foto: fotoUrl,
-                vehiculo_id: vehiculo.id,
-                ultima_carga: null
-            };
-            registros.unshift(nuevoRegistro);
-            mostrarRegistros(registros);
+            // 8. Recargar todos los registros desde el backend para reflejar el estado real
+            await cargarRegistros();
         };
 
         window.addEventListener('DOMContentLoaded', cargarRegistros);

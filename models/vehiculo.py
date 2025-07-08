@@ -6,4 +6,5 @@ class Vehiculo(db.Model):
     numero_crasis = db.Column(db.Text, nullable=False)
     placa = db.Column(db.Text, unique=True, nullable=False)
     tipo = db.Column(db.Text, nullable=False)
-    foto = db.Column(db.Text, nullable=True)  # <-- Debe estar así
+    foto = db.Column(db.Text, nullable=True)
+    verificado = db.Column(db.Boolean, default=False, nullable=False)

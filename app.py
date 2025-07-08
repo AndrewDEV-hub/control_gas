@@ -31,8 +31,8 @@ def index():
     if session.get('usuario_rol') == "registrador":
         return render_template("registrador.html")
     # Puedes agregar aquí la vista del supervisor si lo deseas
-    # elif session.get('usuario_rol') == "supervisor":
-    #     return render_template("supervisor.html")
+    elif session.get('usuario_rol') == "supervisor":
+        return render_template("supervisor.html")
     return render_template("index.html")
 
 app = app

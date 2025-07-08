@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Panel Supervisor</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen">
+    <nav class="w-full bg-blue-700 text-white flex items-center justify-between px-4 py-3 fixed top-0 left-0 z-50">
+        <a href="/" class="font-bold text-lg">Combustible</a>
+        <a href="/logout" class="bg-red-500 hover:bg-red-600 px-4 py-2 rounded transition text-xs sm:text-sm font-semibold">Cerrar sesión</a>
+    </nav>
+    <div class="max-w-3xl mx-auto pt-24 pb-8 px-2 sm:px-4">
+        <h1 class="text-xl sm:text-2xl font-bold text-blue-700 mb-6 text-center">Panel del Supervisor</h1>
+        <!-- Barra de búsqueda y filtro -->
+        <div class="flex flex-col sm:flex-row gap-2 mb-6">
+            <input id="busqueda" type="text" placeholder="Buscar por placa, chasis o tipo..."
+                class="flex-1 px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-400 text-sm sm:text-base">
+            <select id="filtroVerificacion" class="px-3 py-2 border rounded text-sm sm:text-base">
+                <option value="todas">Todas</option>
+                <option value="pendientes">Pendientes</option>
+                <option value="verificadas">Verificadas</option>
+            </select>
+            <button id="buscarBtn" class="bg-gray-300 text-gray-700 px-4 py-2 rounded hover:bg-gray-400 text-sm sm:text-base">Buscar</button>
+        </div>
+        <div id="pendientes" class="space-y-4"></div>
+        <div id="noPendientes" class="text-center text-gray-500 mt-8 hidden text-sm sm:text-base">No hay registros</div>
+    </div>
+
+    <!-- Modal de edición -->
+    <div id="modalEditar" class="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-lg shadow-lg w-full max-w-lg mx-2 sm:mx-auto overflow-y-auto max-h-[95vh] relative">
+            <button onclick="cerrarModalEditar()" class="absolute top-2 right-2 text-gray-400 hover:text-red-500 text-2xl">&times;</button>
+            <div class="p-4 sm:p-6">
+                <h2 class="text-lg sm:text-xl font-bold mb-4 text-blue-700">Editar vehículo</h2>
+                <form id="editarForm" class="space-y-4">
+                    <div>
+                        <label class="block font-semibold mb-1 text-sm sm:text-base">N° Chasis</label>
+                        <input name="numero_crasis" type="text" class="w-full border px-3 py-2 rounded text-sm sm:text-base" required>
+                    </div>
+                    <div>
+                        <label class="block font-semibold mb-1 text-sm sm:text-base">Placa</label>
+                        <input name="placa" type="text" class="w-full border px-3 py-2 rounded text-sm sm:text-base" required>
+                    </div>
+                    <div>
+                        <label class="block font-semibold mb-1 text-sm sm:text-base">Tipo</label>
+                        <select name="tipo" class="w-full border px-3 py-2 rounded text-sm sm:text-base" required>
+                            <option value="auto">Auto</option>
+                            <option value="motocicleta">Motocicleta</option>
+                            <option value="motocar">Motocar</option>
+                            <option value="camion">Camión</option>
+                        </select>
+                    </div>
+                    <div id="editarError" class="text-red-600 text-xs sm:text-sm"></div>
+                    <button type="submit" class="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 text-sm sm:text-base">Guardar cambios</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let vehiculos = [];
+        let vehiculoEditando = null;
+
+        async function cargarVehiculos() {
+            const res = await fetch('/vehiculos');
+            vehiculos = await res.json();
+            filtrarYMostrar();
+        }
+
+        function filtrarYMostrar() {
+            const busqueda = document.getElementById('busqueda').value.trim().toLowerCase();
+            const filtro = document.getElementById('filtroVerificacion').value;
+            let filtrados = vehiculos;
+
+            // Filtro por verificación
+            if (filtro === "pendientes") {
+                filtrados = filtrados.filter(v => !v.verificado);
+            } else if (filtro === "verificadas") {
+                filtrados = filtrados.filter(v => v.verificado);
+            }
+
+            // Filtro por búsqueda
+            if (busqueda) {
+                filtrados = filtrados.filter(v =>
+                    (v.placa && v.placa.toLowerCase().includes(busqueda)) ||
+                    (v.numero_crasis && v.numero_crasis.toLowerCase().includes(busqueda)) ||
+                    (v.tipo && v.tipo.toLowerCase().includes(busqueda))
+                );
+            }
+
+            mostrarVehiculos(filtrados);
+        }
+
+        function mostrarVehiculos(lista) {
+            const cont = document.getElementById('pendientes');
+            cont.innerHTML = '';
+            if (lista.length === 0) {
+                document.getElementById('noPendientes').classList.remove('hidden');
+                return;
+            }
+            document.getElementById('noPendientes').classList.add('hidden');
+            lista.forEach(v => {
+                const tarjeta = document.createElement('div');
+                tarjeta.className = "bg-white rounded shadow flex flex-col sm:flex-row gap-4 p-4 items-center relative";
+                let leyenda = '';
+                if (v.verificado) {
+                    leyenda = '<span class="inline-block bg-green-100 text-green-800 px-2 py-1 rounded text-xs font-semibold mb-2">Verificado</span>';
+                } else {
+                    leyenda = '<span class="inline-block bg-yellow-100 text-yellow-800 px-2 py-1 rounded text-xs font-semibold mb-2">Verificación pendiente</span>';
+                }
+                tarjeta.innerHTML = `
+                    ${leyenda}
+                    <img src="${v.foto || 'https://placehold.co/120x80?text=Sin+foto'}" alt="Foto" class="w-44 h-32 sm:w-56 sm:h-40 object-cover rounded border mb-2 sm:mb-0">
+                    <div class="flex-1 w-full">
+                        <div class="font-bold text-base sm:text-lg">Placa: ${v.placa}</div>
+                        <div class="text-gray-600 text-sm sm:text-base">Tipo: ${v.tipo}</div>
+                        <div class="text-gray-600 text-sm sm:text-base">N° Chasis: ${v.numero_crasis}</div>
+                        <div class="flex gap-2 mt-2">
+                            ${!v.verificado ? `<button class="bg-green-600 text-white px-3 py-1 rounded text-xs sm:text-sm confirmar-btn">Confirmar</button>` : ''}
+                            <button class="bg-blue-600 text-white px-3 py-1 rounded text-xs sm:text-sm editar-btn">Modificar</button>
+                        </div>
+                    </div>
+                `;
+                // Confirmar
+                if (!v.verificado) {
+                    tarjeta.querySelector('.confirmar-btn').onclick = async function() {
+                        await fetch(`/vehiculos/${v.id}/verificar`, { method: 'PUT' });
+                        await cargarVehiculos();
+                    };
+                }
+                // Editar
+                tarjeta.querySelector('.editar-btn').onclick = function() {
+                    abrirModalEditar(v);
+                };
+                cont.appendChild(tarjeta);
+            });
+        }
+
+        function abrirModalEditar(vehiculo) {
+            vehiculoEditando = vehiculo;
+            document.getElementById('modalEditar').classList.remove('hidden');
+            const form = document.getElementById('editarForm');
+            form.numero_crasis.value = vehiculo.numero_crasis;
+            form.placa.value = vehiculo.placa;
+            form.tipo.value = vehiculo.tipo;
+            document.getElementById('editarError').innerText = '';
+        }
+        function cerrarModalEditar() {
+            document.getElementById('modalEditar').classList.add('hidden');
+            vehiculoEditando = null;
+        }
+
+        document.getElementById('editarForm').onsubmit = async function(e) {
+            e.preventDefault();
+            if (!vehiculoEditando) return;
+            const numero_crasis = this.numero_crasis.value.trim();
+            const placa = this.placa.value.trim();
+            const tipo = this.tipo.value;
+            const res = await fetch(`/vehiculos/${vehiculoEditando.id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ numero_crasis, placa, tipo })
+            });
+            if (!res.ok) {
+                document.getElementById('editarError').innerText = "Error al guardar cambios.";
+                return;
+            }
+            cerrarModalEditar();
+            await cargarVehiculos();
+        };
+
+        document.getElementById('buscarBtn').onclick = filtrarYMostrar;
+        document.getElementById('busqueda').addEventListener('input', filtrarYMostrar);
+        document.getElementById('filtroVerificacion').addEventListener('change', filtrarYMostrar);
+
+        window.addEventListener('DOMContentLoaded', cargarVehiculos);
+    </script>
+</body>
+</html>

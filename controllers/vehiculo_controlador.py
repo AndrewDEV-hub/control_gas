@@ -18,7 +18,8 @@ def crear_vehiculo():
         'id': vehiculo.id,
         'placa': vehiculo.placa,
         'tipo': vehiculo.tipo,
-        'foto': vehiculo.foto
+        'foto': vehiculo.foto,
+        'verificado': vehiculo.verificado 
     }), 201
 
 @vehiculo_bp.route('/vehiculos', methods=['GET'])
@@ -30,7 +31,8 @@ def listar_vehiculos():
             'numero_crasis': v.numero_crasis,
             'placa': v.placa,
             'tipo': v.tipo,
-            'foto': v.foto
+            'foto': v.foto,
+            'verificado': v.verificado
         } for v in vehiculos
     ])
 
@@ -72,3 +74,10 @@ def eliminar_vehiculo(id):
     db.session.delete(vehiculo)
     db.session.commit()
     return jsonify({'message': 'Vehículo eliminado'})
+
+@vehiculo_bp.route('/vehiculos/<int:id>/verificar', methods=['PUT'])
+def verificar_vehiculo(id):
+    vehiculo = Vehiculo.query.get_or_404(id)
+    vehiculo.verificado = True
+    db.session.commit()
+    return jsonify({'message': 'Vehículo verificado'})
