@@ -1,19 +1,23 @@
 from flask import Blueprint, request, jsonify
 from models import db, CargaCombustible
+from models import PersonaVehiculo, CargaCombustible, db
+from datetime import datetime
+
 
 carga_combustible_bp = Blueprint('carga_combustible', __name__)
 
-@carga_combustible_bp.route('/cargas_combustible', methods=['POST'])
-def crear_carga_combustible():
-    data = request.get_json()
-    carga = CargaCombustible(
-        vehiculo_id=data['vehiculo_id'],
-        estacion_id=data['estacion_id'],
-        cantidad=data['cantidad']
-    )
-    db.session.add(carga)
-    db.session.commit()
-    return jsonify({'id': carga.id}), 201
+def litros_cargados_en_mes(persona_id):
+    hoy = datetime.now()
+    primer_dia = hoy.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    vehiculos_ids = [pv.vehiculo_id for pv in PersonaVehiculo.query.filter_by(persona_id=persona_id).all()]
+    if not vehiculos_ids:
+        return 0
+    total = db.session.query(db.func.sum(CargaCombustible.cantidad)).filter(
+        CargaCombustible.vehiculo_id.in_(vehiculos_ids),
+        CargaCombustible.fecha >= primer_dia
+    ).scalar()
+    return total or 0
+
 
 @carga_combustible_bp.route('/cargas_combustible', methods=['GET'])
 def listar_cargas_combustible():
@@ -64,3 +68,24 @@ def eliminar_carga_combustible(id):
     db.session.delete(carga)
     db.session.commit()
     return jsonify({'message': 'Carga de combustible eliminada'})
+
+@carga_combustible_bp.route('/cargas_combustible', methods=['POST'])
+def registrar_carga():
+    data = request.get_json()
+    vehiculo_id = data['vehiculo_id']
+    cantidad = int(data['cantidad'])
+    persona_vehiculo = PersonaVehiculo.query.filter_by(vehiculo_id=vehiculo_id).first()
+    if not persona_vehiculo:
+        return jsonify({"error": "No se encontró la persona asociada"}), 400
+    persona_id = persona_vehiculo.persona_id
+    total_cargado = litros_cargados_en_mes(persona_id)
+    if total_cargado + cantidad > 119:
+        return jsonify({"error": f"El límite mensual de 119L para esta persona ya fue alcanzado. Restante: {max(0, 119 - total_cargado)}L"}), 400
+    carga = CargaCombustible(
+        vehiculo_id=vehiculo_id,
+        estacion_id=data['estacion_id'],
+        cantidad=cantidad
+    )
+    db.session.add(carga)
+    db.session.commit()
+    return jsonify({'id': carga.id}), 201

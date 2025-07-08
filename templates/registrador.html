@@ -62,6 +62,7 @@
                     class="bg-gray-300 text-gray-700 px-4 py-2 rounded hover:bg-gray-400 text-sm sm:text-base">Actualizar</button>
             </div>
         </div>
+        <div id="infoDiaRestriccion" class="hidden mb-4 text-center"></div>
         <!-- Resultados -->
         <div id="resultados" class="space-y-4"></div>
         <div id="noRegistros" class="text-center text-gray-500 mt-8 hidden text-sm sm:text-base">No existen registros
@@ -71,7 +72,7 @@
     <!-- Modal de registro -->
     <div id="modalRegistro" class="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 hidden">
         <div
-            class="bg-white rounded-lg shadow-lg w-full max-w-lg mx-2 sm:mx-auto overflow-y-auto max-h-[95vh] relative">
+            class="bg-white rounded-lg shadow-lg w-full max-w-lg mx-2 sm:mx-auto overflow-y-auto max-h-[70vh] sm:max-h-[80vh] relative">
             <button onclick="cerrarModal()"
                 class="absolute top-2 right-2 text-gray-400 hover:text-red-500 text-2xl">&times;</button>
             <div class="p-4 sm:p-6">
@@ -310,7 +311,7 @@
                 lista.forEach(data => mostrarTarjeta(data, false));
             }
         }
-
+        
         // Mostrar tarjeta de registro debajo de la barra de búsqueda
         function mostrarTarjeta(data, prepend = true) {
             const resultados = document.getElementById('resultados');
@@ -321,28 +322,29 @@
             } else {
                 leyenda = '<span class="inline-block bg-yellow-100 text-yellow-800 px-2 py-1 rounded text-xs font-semibold mb-2">Verificación pendiente</span>';
             }
-            // Solo puede cargar si está verificado y no superó el límite mensual
-            const puedeCargar = data.verificado && data.restante_mes > 0;
+            const cumpleDia = !restriccionDiaActiva || puedeCargarPorDia(data.ci, data.es_institucional);
+            const puedeCargar = data.verificado && data.restante_mes > 0 && cumpleDia;
             const disabled = puedeCargar ? '' : 'disabled style="opacity:0.5;cursor:not-allowed;"';
             const tarjeta = document.createElement('div');
             tarjeta.className = "bg-white rounded shadow flex flex-col sm:flex-row gap-4 p-4 items-center relative";
             tarjeta.innerHTML = `
-            ${leyenda}
-            <img src="${fotoUrl}" alt="Foto" class="w-44 h-32 sm:w-56 sm:h-40 object-cover rounded border mb-2 sm:mb-0">
-            <div class="flex-1 w-full">
-                <div class="font-bold text-base sm:text-lg">${data.nombre} (${data.ci})</div>
-                <div class="text-gray-600 text-sm sm:text-base">${data.es_funcionario ? 'Funcionario Público, Credencial: ' + data.numero_credencial : 'No funcionario'}</div>
-                <div class="mt-1 text-sm sm:text-base">Vehículo: <span class="font-semibold">${data.placa}</span> (${data.tipo})<br>
-                N° Chasis: ${data.numero_crasis} ${data.es_institucional ? '<br>Institucional: ' + data.nombre_institucion : ''}</div>
-                <div class="mt-1 text-xs sm:text-sm text-blue-700">
-                    Cargado este mes: <span class="font-semibold">${data.total_cargado_mes} L</span> /
-                    <span class="font-semibold">119 L</span><br>
-                    Restante: <span class="font-semibold">${data.restante_mes} L</span>
+                ${leyenda}
+                <img src="${fotoUrl}" alt="Foto" class="w-44 h-32 sm:w-56 sm:h-40 object-cover rounded border mb-2 sm:mb-0">
+                <div class="flex-1 w-full">
+                    <div class="font-bold text-base sm:text-lg">${data.nombre} (${data.ci})</div>
+                    <div class="text-gray-600 text-sm sm:text-base">${data.es_funcionario ? 'Funcionario Público, Credencial: ' + data.numero_credencial : 'No funcionario'}</div>
+                    <div class="mt-1 text-sm sm:text-base">Vehículo: <span class="font-semibold">${data.placa}</span> (${data.tipo})<br>
+                    N° Chasis: ${data.numero_crasis} ${data.es_institucional ? '<br>Institucional: ' + data.nombre_institucion : ''}</div>
+                    <div class="mt-1 text-xs sm:text-sm text-blue-700">
+                        Cargado este mes: <span class="font-semibold">${data.total_cargado_mes} L</span> /
+                        <span class="font-semibold">119 L</span><br>
+                        Restante: <span class="font-semibold">${data.restante_mes} L</span>
+                    </div>
+                    <div class="mt-1 carga-info"></div>
+                    <button class="bg-green-600 text-white px-3 py-1 rounded mt-2 text-xs sm:text-sm cargar-btn" ${disabled}>Cargar</button>
+                    ${!cumpleDia && restriccionDiaActiva ? `<div class="text-xs text-red-600 mt-1">No puede cargar hoy según la terminación de CI</div>` : ''}
                 </div>
-                <div class="mt-1 carga-info"></div>
-                <button class="bg-green-600 text-white px-3 py-1 rounded mt-2 text-xs sm:text-sm cargar-btn" ${disabled}>Cargar</button>
-            </div>
-        `;
+            `;
             // Botón cargar
             tarjeta.querySelector('.cargar-btn').onclick = function () {
                 if (puedeCargar) {
@@ -363,7 +365,71 @@
                 resultados.appendChild(tarjeta);
             }
         }
+        let restriccionDiaActiva = false;
 
+        async function cargarRestriccionDia() {
+            const res = await fetch('/restriccion-dia');
+            const data = await res.json();
+            restriccionDiaActiva = !!data.activa;
+            mostrarInfoDiaRestriccion();
+            mostrarRegistros(registros);
+        }
+
+        function mostrarInfoDiaRestriccion() {
+            const infoDiv = document.getElementById('infoDiaRestriccion');
+            if (!restriccionDiaActiva) {
+                infoDiv.classList.add('hidden');
+                infoDiv.innerHTML = '';
+                return;
+            }
+            const dias = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+            const hoy = new Date();
+            const dia = hoy.getDay();
+            const fecha = hoy.toLocaleDateString('es-BO', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+            let terminaciones = '';
+            if (dia === 0) {
+                terminaciones = '<span class="text-blue-700 font-semibold">Solo vehículos institucionales pueden cargar hoy.</span>';
+            } else if (dia === 1 || dia === 4) {
+                terminaciones = '<span class="font-semibold text-blue-700">1, 2, 3</span>';
+            } else if (dia === 2 || dia === 5) {
+                terminaciones = '<span class="font-semibold text-blue-700">4, 5, 6</span>';
+            } else if (dia === 3 || dia === 6) {
+                terminaciones = '<span class="font-semibold text-blue-700">7, 8, 9, 0</span>';
+            }
+            infoDiv.classList.remove('hidden');
+            infoDiv.innerHTML = `
+                <div class="inline-block bg-blue-100 border border-blue-300 rounded px-4 py-2 shadow text-sm sm:text-base">
+                    <div class="font-bold text-blue-800 mb-1">${dias[dia]} - ${fecha.charAt(0).toUpperCase() + fecha.slice(1)}</div>
+                    <div>
+                        ${dia === 0
+                    ? terminaciones
+                    : `Pueden cargar CI terminados en: ${terminaciones}`
+                }
+                    </div>
+                </div>
+            `;
+        }
+        function puedeCargarPorDia(ci, es_institucional) {
+            const hoy = new Date();
+            const dia = hoy.getDay(); // 0=Domingo, 1=Lunes, ..., 6=Sábado
+            const terminacion = ci ? ci.trim().slice(-1) : '';
+            if (dia === 0) {
+                // Domingo: solo institucionales
+                return !!es_institucional;
+            }
+            const mapa = {
+                1: ['1', '2', '3'], // Lunes
+                2: ['4', '5', '6'], // Martes
+                3: ['7', '8', '9', '0'], // Miércoles
+                4: ['1', '2', '3'], // Jueves
+                5: ['4', '5', '6'], // Viernes
+                6: ['7', '8', '9', '0'] // Sábado
+            };
+            return mapa[dia] ? mapa[dia].includes(terminacion) : true;
+        }
+        
+
+        
         // Modal cargar
         let cargaVehiculoId = null;
         let cargaTarjetaDiv = null;
@@ -391,6 +457,16 @@
             if (!/^\d+$/.test(cantidad) || parseInt(cantidad) < 1) {
                 document.getElementById('cargaError').innerText = "Ingresa un valor entero positivo.";
                 return;
+            }
+            // Validación de límite mensual
+            const registro = registros.find(r => r.vehiculo_id === cargaVehiculoId);
+            if (registro) {
+                const totalCargado = registro.total_cargado_mes;
+                const cantidadInt = parseInt(cantidad, 10);
+                if (totalCargado + cantidadInt > 119) {
+                    document.getElementById('cargaError').innerText = `No puedes cargar más de 119 litros en el mes. Te quedan ${Math.max(0, 119 - totalCargado)} litros.`;
+                    return;
+                }
             }
             let res = await fetch('/cargas_combustible', {
                 method: 'POST',
@@ -536,7 +612,10 @@
             await cargarRegistros();
         };
 
-        window.addEventListener('DOMContentLoaded', cargarRegistros);
+        window.addEventListener('DOMContentLoaded', () => {
+            cargarRegistros();
+            cargarRestriccionDia();
+        });
     </script>
 </body>
 

@@ -7,6 +7,7 @@ from .funcionario_publico_controlador import funcionario_publico_bp
 from .vehiculo_institucional import vehiculo_institucional_bp
 from .persona_vehiculo_controlador import persona_vehiculo_bp
 from .auth_controlador import auth_bp
+from .restriccion_dia_controlador import restriccion_bp
 
 blueprints = [
     persona_bp,
@@ -17,5 +18,6 @@ blueprints = [
     funcionario_publico_bp,
     vehiculo_institucional_bp,
     persona_vehiculo_bp,
-    auth_bp
+    auth_bp,
+    restriccion_bp
 ]
