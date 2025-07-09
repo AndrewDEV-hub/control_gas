@@ -103,6 +103,7 @@ control_gas
 ---
 ### Paso 1
 Descargar el Zip desde el repositorio o clonarlo.
+
 ![imagen1](docs/imagen1.png)
 
 ### Paso 2
@@ -119,6 +120,7 @@ pip install -r requirements.txt
 
 ### Paso 4
 Crear una base de datos con pgAdmin 4 para el proyecto.
+
 ![imagen3](docs/imagen3.png)
 
 Le ponemos el nombre que querramos y le damos a save.
@@ -126,6 +128,7 @@ Le ponemos el nombre que querramos y le damos a save.
 
 ### Paso 5
 Crear el archivo .env en la raiz de la carpeta del proyecto.
+
 ![imagen5](docs/imagen5.png)
 ![imagen6](docs/imagen6.png)
 
@@ -140,6 +143,7 @@ En puerto ponemos el puerto que por defecto en bases de datos PostgreSQL es "543
 Y finalmente en nombre_basedatos ponemos el nombre de la base de datos que previamente creamos.
 
 Nos quedaria algo asi, por ejemplo:
+
 ![imagen7](docs/imagen7.png)
 
 ### Paso 6
